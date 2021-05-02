@@ -27,6 +27,8 @@ CAF_ADD_ATOM(truck_block, become_client_atom)
 CAF_ADD_ATOM(truck_block, assign_id_atom)
 CAF_ADD_ATOM(truck_block, get_new_command)
 CAF_ADD_ATOM(truck_block, become_master_atom)
+CAF_ADD_ATOM(truck_block, send_new_command_atom)
+CAF_ADD_ATOM(truck_block, set_server_atom)
 CAF_END_TYPE_ID_BLOCK(truck_block)
 
 
@@ -50,7 +52,9 @@ struct Truck{
     int32_t iId_;
     float fSpeed;
     std::map<int32_t, caf::strong_actor_ptr> mPlatoon;
+    
 public:
+    caf::strong_actor_ptr server;
     std::string getName();
     int32_t getId();
     float getSpeed();
@@ -66,6 +70,13 @@ caf::behavior master(caf::stateful_actor<Truck>* self);
 caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl, const caf::actor& buddy);
 
 caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl, const caf::actor& buddy);
+
+
+caf::behavior TruckBehind(caf::io::broker *self, caf::io::connection_handle hdl,const caf::actor& buddy);
+caf::behavior temp_server(caf::io::broker *self,const caf::actor& buddy);
+
+
+
 
 
 #endif /* Truck_hpp */

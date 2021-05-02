@@ -20,7 +20,7 @@ public:
     opt_group{custom_options_, "global"}
       .add(port, "port,p", "set port")
       .add(host, "host,H", "set host (ignored in server mode)");
-     
+    
   }
 };
 
