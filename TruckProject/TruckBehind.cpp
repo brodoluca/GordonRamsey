@@ -20,14 +20,14 @@ caf::behavior TruckBehind(caf::io::broker *self, caf::io::connection_handle hdl,
     return{
         [=](const caf::io::new_connection_msg& msg) {
             aout(self) << "[SERVER]: New Connection_Accepted" << std::endl;
+            
+
         
       },[=](send_new_command_atom, uint32_t command){
           std::cout<<"Started\n";
           write_int(self, hdl, static_cast<uint8_t>(operations::command));
           write_int(self, hdl, command);
           self->flush(hdl);
-
-        
       },[=](const caf::io::new_data_msg& msg) {
           auto rd_pos = msg.buf.data();
           auto op_val = uint8_t{0};
@@ -42,7 +42,12 @@ caf::behavior TruckBehind(caf::io::broker *self, caf::io::connection_handle hdl,
                       write_int(self, hdl, Id-1);
                       self->flush(hdl);
                   });
-                  
+                  self->request(buddy, std::chrono::seconds(4), which_id_atom_v).await([=](int32_t Id){
+                      write_int(self, hdl, static_cast<uint8_t>(operations::front_id));
+                      write_int(self, hdl, Id);
+                      self->flush(hdl);
+                  });
+                
                   break;
             default:
                   aout(self) << "invalid value for op_val, stop" << std::endl;

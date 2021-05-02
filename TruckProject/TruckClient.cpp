@@ -40,7 +40,7 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
             write_int(self, hdl,static_cast<int32_t>(2));
             self->flush(hdl);
           },
-        
+    
         [=](const caf::io::new_data_msg& msg) {
             // Keeps track of our position in the buffer.
             auto rd_pos = msg.buf.data();
@@ -51,8 +51,8 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
             auto val = uint32_t{0};
             read_int(rd_pos, val);
             switch (static_cast<operations>(op_val)) {
-                case operations::assign_id:
-                aout(self) << "received response "<< val << std::endl;
+                case operations::front_id:
+                    self->send(buddy, set_front_id_v, int32_t(val));
                 break;
                 case operations::get_id:
                 aout(self) << "[CLIENT]: Received new ID: "<<val << std::endl;

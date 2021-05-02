@@ -37,7 +37,9 @@ void caf_main(caf::actor_system& system, const config& cfg) {
         std::cerr << "failed to spawn client: " << to_string(server_actor.error())<< std::endl;
         return;
     }
+    
     send_as(*server_actor,truck_actor, initialize_atom_v, "TRUCK");
+    send_as(*server_actor,truck_actor, update_port_host_atom_v, cfg.port, cfg.host);
     print_on_exit(*server_actor, "[CLIENT]");
     print_on_exit(truck_actor, "[TRUCK]");
 }

@@ -22,11 +22,18 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
             aout(self)<<self->state.getName() + " has been spawned \n";
             self->anon_send(caf::actor_cast<caf::actor>(self->current_sender()), initialize_atom_v);
         },
+        [=](set_front_id, int32_t newID) {
+            return self->state.setFrontId(newID);
+        },
         [=](which_id_atom) {
             return self->state.getId();
         },
         [=](get_new_id_atom, int32_t newID) {
             self->state.setId(newID);
+        },
+        [=](update_port_host_atom, int16_t newPort, std::string newHost) {
+            self->state.setPort(newPort);
+            self->state.setHost(newHost);
         },
         [=](get_new_command, int32_t command) {
             switch (static_cast<commands>(command)) {
@@ -89,8 +96,17 @@ std::string Truck::getName(){
 int32_t Truck::getId(){
     return iId_;
 }
+int32_t Truck::getFrontId(){
+    return iFrontId_;
+}
 float Truck::getSpeed(){
     return fSpeed;
+}
+std::string Truck::getHost(){
+    return sHost;
+}
+uint16_t Truck::getPort(){
+    return uPort;
 }
 
 //
@@ -103,10 +119,18 @@ void Truck::setName(std::string name){
 void Truck::setId(int32_t id){
     iId_ = id;
 };
+void Truck::setFrontId(int32_t id){
+    iFrontId_ = (id == 1)? 64 : id;
+};
 void Truck::setSpeed(float speed){
     fSpeed = speed;
 };
 
+void Truck::setHost(std::string host){
+    sHost = host;
+}
 
-
+void Truck::setPort(uint16_t port){
+    uPort = port;
+}
 
