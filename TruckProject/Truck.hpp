@@ -29,6 +29,7 @@ CAF_ADD_ATOM(truck_block, get_new_command)
 CAF_ADD_ATOM(truck_block, become_master_atom)
 CAF_ADD_ATOM(truck_block, send_new_command_atom)
 CAF_ADD_ATOM(truck_block, set_server_atom)
+CAF_ADD_ATOM(truck_block, which_id_atom)
 CAF_END_TYPE_ID_BLOCK(truck_block)
 
 

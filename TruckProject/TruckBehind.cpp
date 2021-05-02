@@ -27,7 +27,7 @@ caf::behavior TruckBehind(caf::io::broker *self, caf::io::connection_handle hdl,
           write_int(self, hdl, command);
           self->flush(hdl);
 
-          
+        
       },[=](const caf::io::new_data_msg& msg) {
           auto rd_pos = msg.buf.data();
           auto op_val = uint8_t{0};
@@ -37,9 +37,12 @@ caf::behavior TruckBehind(caf::io::broker *self, caf::io::connection_handle hdl,
           read_int(rd_pos, val);
           switch (static_cast<operations>(op_val)) {
               case operations::assign_id:
-                  write_int(self, hdl, static_cast<uint8_t>(operations::get_id));
-                  write_int(self, hdl, 5);
-                  self->flush(hdl);
+                  self->request(buddy, std::chrono::seconds(4), which_id_atom_v).await([=](int32_t Id){
+                      write_int(self, hdl, static_cast<uint8_t>(operations::get_id));
+                      write_int(self, hdl, Id-1);
+                      self->flush(hdl);
+                  });
+                  
                   break;
             default:
                   aout(self) << "invalid value for op_val, stop" << std::endl;

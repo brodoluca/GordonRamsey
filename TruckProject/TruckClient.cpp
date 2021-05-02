@@ -32,12 +32,12 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
           }
         },
         [=](initialize_atom) {
-            self->send(self, send_server_atom_v, 2);
+            self->send(self, send_server_atom_v);
         
-        },[=](send_server_atom, int32_t i) {
-            aout(self) << "[CLIENT]: Send Server: " << i << "" << std::endl;
+        },[=](send_server_atom) {
+            aout(self) << "[CLIENT]: Send Server: " << "" << std::endl;
             write_int(self, hdl, static_cast<uint8_t>(operations::assign_id));
-            write_int(self, hdl, i);
+            write_int(self, hdl,static_cast<int32_t>(2));
             self->flush(hdl);
           },
         

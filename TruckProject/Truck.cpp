@@ -22,7 +22,9 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
             aout(self)<<self->state.getName() + " has been spawned \n";
             self->anon_send(caf::actor_cast<caf::actor>(self->current_sender()), initialize_atom_v);
         },
-    
+        [=](which_id_atom) {
+            return self->state.getId();
+        },
         [=](get_new_id_atom, int32_t newID) {
             self->state.setId(newID);
         },
@@ -61,9 +63,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         },
         [=](become_master_atom){
             self->become(master(self));
-            self->state.setId(1);
-            self->state.mPlatoon.insert(std::pair<int32_t,caf::strong_actor_ptr>(self->state.getId(), caf::actor_cast<caf::strong_actor_ptr>(self)));
-            aout(self)<<"["+self->state.getName()+"]" + " has a new ID:"+ std::to_string(self->state.getId()) + "\n";
+            self->state.setId(64);
         },[=](set_server_atom){
             self->state.server = self->current_sender();
         }
@@ -73,7 +73,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
 caf::behavior master(caf::stateful_actor<Truck>* self){;
     return {
         [=](assign_id_atom){
-            return 2;
+            return self->state.getId() - 1;
         }
         
     };
