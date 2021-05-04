@@ -34,6 +34,7 @@ public:
     int32_t getId();
     int32_t getFrontId();
     uint16_t getPort();
+    const char* getHostC();
     std::string getHost();
     float getSpeed();
     

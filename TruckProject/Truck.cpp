@@ -31,7 +31,13 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         [=](get_new_id_atom, int32_t newID) {
             self->state.setId(newID);
         },
-        [=](update_port_host_atom, int16_t newPort, std::string newHost) {
+        [=](get_host_port_atom) {
+            return std::make_pair(int32_t(self->state.getPort()),self->state.getHost());
+        },
+        [=](get_host_atom) {
+            return self->state.getHostC();
+        },
+        [=](update_port_host_atom, uint16_t newPort, std::string newHost) {
             self->state.setPort(newPort);
             self->state.setHost(newHost);
         },
@@ -107,6 +113,13 @@ std::string Truck::getHost(){
 }
 uint16_t Truck::getPort(){
     return uPort;
+}
+const char* Truck::getHostC(){
+    char* temp=new char(17);
+    std::strcpy(temp, sHost.c_str());
+    for(unsigned long i=sHost.length();i<17;i++)
+        temp[i] = '-';
+    return temp;
 }
 
 //

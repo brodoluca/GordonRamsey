@@ -33,7 +33,7 @@ caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl,
             [=](uint32_t a) {
 //                YOU CAN USE THIS PART TO SEND COMMANDS TO THE TRUCK
                 write_int(self, hdl, static_cast<uint8_t>(operations::command));
-                
+            
                 switch (a) {
                     case 1:
                         write_int(self, hdl, static_cast<uint32_t>(commands::stop));

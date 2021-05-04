@@ -80,14 +80,26 @@ CAF_ADD_ATOM(truck_block, send_new_command_atom)
 CAF_ADD_ATOM(truck_block, set_server_atom)
 CAF_ADD_ATOM(truck_block, which_id_atom)
 CAF_ADD_ATOM(truck_block, set_front_id)
+CAF_ADD_ATOM(truck_block, get_port_atom)
+CAF_ADD_ATOM(truck_block, get_host_atom)
+CAF_ADD_ATOM(truck_block, get_host_port_atom)
+
+CAF_ADD_TYPE_ID(truck_block, (std::pair<int32_t, std::string>) )
+
 CAF_END_TYPE_ID_BLOCK(truck_block)
+template <class Inspector>
+bool inspect(Inspector& f, std::pair<int32_t, std::string>& x) {
+    return f.object(x).fields(f.field("int32_t", x.first), f.field("string", x.second));
+}
 
 
 enum class operations : uint8_t {
     assign_id,
     get_id,
     command,
-    front_id
+    front_id,
+    update_truck_behind,
+    get_port_host
 };
 
 enum class commands : uint32_t{

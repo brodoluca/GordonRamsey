@@ -21,7 +21,7 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
     });
     
 //    configure to exactly receive this much data
-    self->configure_read(hdl, caf::io::receive_policy::at_most(sizeof(uint8_t)+sizeof(uint32_t)));
+    self->configure_read(hdl, caf::io::receive_policy::at_most(sizeof(uint8_t)+sizeof(uint32_t)+sizeof(char)*16));
     return {
         [=](const caf::io::connection_closed_msg& msg) {
           if (msg.handle == hdl) {
@@ -30,6 +30,7 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
               self->send_exit(buddy, caf::exit_reason::remote_link_unreachable);
               self->quit(caf::exit_reason::remote_link_unreachable);
           }
+            
         },
         [=](initialize_atom) {
             self->send(self, send_server_atom_v);
@@ -40,7 +41,7 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
             write_int(self, hdl,static_cast<int32_t>(2));
             self->flush(hdl);
           },
-    
+
         [=](const caf::io::new_data_msg& msg) {
             // Keeps track of our position in the buffer.
             auto rd_pos = msg.buf.data();
@@ -61,6 +62,22 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
                 case operations::command:
                     aout(self) << "[CLIENT]: Received new command" << std::endl;
                     self->send(buddy, get_new_command_v, int32_t(val));
+                break;
+                case operations::get_port_host:
+                    self->request(buddy, std::chrono::seconds(2), get_host_port_atom_v).then(
+                            [=](std::pair<int32_t, std::string> pHostPort){
+                                char* temp=new char(17);
+                                std::strcpy(temp, pHostPort.second.c_str());
+                                for(unsigned long i=pHostPort.second.length();i<17;i++)
+                                    temp[i] = '-';
+                                write_int(self, hdl, static_cast<uint8_t>(operations::update_truck_behind));
+                                write_int(self, hdl, pHostPort.first);
+                        
+                                self->write(hdl, sizeof(char)*17, temp);
+                                self->flush(hdl);
+                                });
+                    
+                    
                 break;
               default:
                 aout(self) << "invalid value for op_val, stop" << std::endl;

@@ -7,6 +7,7 @@
 #include <iostream>
 #include "caf/all.hpp"
 #include "caf/io/all.hpp"
+#include <string.h>
 
 #include "Truck.hpp"
 
@@ -24,12 +25,12 @@ public:
   }
 };
 
-
 caf::behavior server(caf::io::broker* self, const caf::actor& buddy);
 void run_server(caf::actor_system& system, const config& cfg);
 
-
 void caf_main(caf::actor_system& system, const config& cfg) {
+//    std::cout << cfg.host +" - "+ std::to_string(cfg.host.size())+"\n";
+
     caf::scoped_actor self{system};
     auto truck_actor = system.spawn(truck);
     auto server_actor = system.middleman().spawn_client(TruckClient, cfg.host, cfg.port,truck_actor);
@@ -42,6 +43,8 @@ void caf_main(caf::actor_system& system, const config& cfg) {
     send_as(*server_actor,truck_actor, update_port_host_atom_v, cfg.port, cfg.host);
     print_on_exit(*server_actor, "[CLIENT]");
     print_on_exit(truck_actor, "[TRUCK]");
+    
+    
 }
 CAF_MAIN(caf::io::middleman, caf::id_block::truck_block)
 
