@@ -12,10 +12,11 @@
 //
 
 caf::behavior truck(caf::stateful_actor<Truck>* self){
-    
-    
     auto server = self->home_system().middleman().spawn_server(temp_server, 3232, caf::actor_cast<caf::actor>(self));
-    
+    self->attach_functor([=](const caf::error& reason) {
+        std:: cout << "Im down";
+        self->send_exit(caf::actor_cast<caf::actor>(self->state.server),caf::exit_reason::remote_link_unreachable);
+    });
     return{
         [=](initialize_atom,std::string name) {
             self->state.setName(name);
@@ -30,11 +31,27 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         },
         [=](get_new_id_atom, int32_t newID) {
             self->state.setId(newID);
+            self->send(caf::actor_cast<caf::actor>(self->current_sender()), is_master_atom_v);
+        },
+        
+        [=](you_are_master_atom) {
+            aout(self) << "I am the new master\n";
+            self->send(caf::actor_cast<caf::actor>(self->current_sender()), you_are_master_atom_v);
+        },
+        [=](tell_back_im_master_atom) {
+            self->send(caf::actor_cast<caf::actor>(self->state.server), tell_back_im_master_atom_v);
         },
         [=](get_host_port_atom) {
             return std::make_pair(int32_t(self->state.getPort()),self->state.getHost());
         },
-        [=](get_host_atom) {
+        [=](set_master_connection_atom, bool val) {
+            self->state.setMasterConnection(val);
+            std::cout<< val << "New conn";
+        },
+        [=](is_master_atom) {
+            return self->state.isMasterConnection();
+            
+        },[=](get_host_atom) {
             return self->state.getHostC();
         },
         [=](update_port_host_atom, uint16_t newPort, std::string newHost) {
@@ -70,24 +87,40 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
                     break;
                 default:
                     break;
+                
             
             }
             
         },
         [=](become_master_atom){
+            aout(self) << "I am the new master\n";
             self->become(master(self));
             self->state.setId(64);
         },[=](set_server_atom){
             self->state.server = self->current_sender();
+            self->attach_functor([=](const caf::error& reason) {
+                std:: cout << "Im down";
+                self->send_exit(caf::actor_cast<caf::actor>(self->state.server),caf::exit_reason::remote_link_unreachable);
+            });
+            
+        },[=](update_id_behind_atom) {
+            self->anon_send(caf::actor_cast<caf::actor>(self->state.server), update_id_behind_atom_v,self->state.getId()-1);
         }
     };
     
 }
+
+
+
+
+
 caf::behavior master(caf::stateful_actor<Truck>* self){;
     return {
         [=](assign_id_atom){
             return self->state.getId() - 1;
-        }
+        },[=](update_id_behind_atom) {
+            self->anon_send(caf::actor_cast<caf::actor>(self->state.server), update_id_behind_atom_v,self->state.getId()-1);
+        },
         
     };
 }
@@ -122,6 +155,9 @@ const char* Truck::getHostC(){
     return temp;
 }
 
+bool Truck::isMasterConnection(){
+    return bMasterConnection;
+}
 //
 //    Setters
 //
@@ -147,3 +183,6 @@ void Truck::setPort(uint16_t port){
     uPort = port;
 }
 
+void Truck::setMasterConnection(bool res){
+    bMasterConnection = res;
+}

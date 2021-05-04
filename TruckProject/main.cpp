@@ -42,7 +42,7 @@ void caf_main(caf::actor_system& system, const config& cfg) {
     send_as(*server_actor,truck_actor, initialize_atom_v, "TRUCK");
     send_as(*server_actor,truck_actor, update_port_host_atom_v, cfg.port, cfg.host);
     print_on_exit(*server_actor, "[CLIENT]");
-    print_on_exit(truck_actor, "[TRUCK]");
+//    print_on_exit(truck_actor, "[TRUCK]");
     
     
 }
@@ -58,7 +58,7 @@ caf::behavior server(caf::io::broker* self, const caf::actor& buddy) {
   return {
     [=](const caf::io::new_connection_msg& msg) {
       aout(self) << "[SERVER]: New Connection_Accepted" << std::endl;
-      auto impl = self->fork(TruckServer, msg.handle, std::move(buddy));
+      auto impl = self->fork(TruckServerMaster, msg.handle, std::move(buddy));
       print_on_exit(impl, "[SERVER]");
       self->quit();
     },

@@ -83,7 +83,11 @@ CAF_ADD_ATOM(truck_block, set_front_id)
 CAF_ADD_ATOM(truck_block, get_port_atom)
 CAF_ADD_ATOM(truck_block, get_host_atom)
 CAF_ADD_ATOM(truck_block, get_host_port_atom)
-
+CAF_ADD_ATOM(truck_block, is_master_atom)
+CAF_ADD_ATOM(truck_block, set_master_connection_atom)
+CAF_ADD_ATOM(truck_block, update_id_behind_atom)
+CAF_ADD_ATOM(truck_block, you_are_master_atom)
+CAF_ADD_ATOM(truck_block, tell_back_im_master_atom)
 CAF_ADD_TYPE_ID(truck_block, (std::pair<int32_t, std::string>) )
 
 CAF_END_TYPE_ID_BLOCK(truck_block)
@@ -92,15 +96,17 @@ bool inspect(Inspector& f, std::pair<int32_t, std::string>& x) {
     return f.object(x).fields(f.field("int32_t", x.first), f.field("string", x.second));
 }
 
-
 enum class operations : uint8_t {
+    master = 5,
     assign_id,
     get_id,
     command,
     front_id,
     update_truck_behind,
-    get_port_host
+    get_port_host,
+    update_id_behind
 };
+
 
 enum class commands : uint32_t{
     stop,

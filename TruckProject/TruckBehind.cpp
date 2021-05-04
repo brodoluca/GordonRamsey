@@ -8,7 +8,6 @@
 #include "Truck.hpp"
 #include "string.h"
 caf::behavior TruckBehind(caf::io::broker *self, caf::io::connection_handle hdl,const caf::actor& buddy){
-    std::cout<<"Started\n";
     self->monitor(buddy);
     self->set_down_handler([=](caf::down_msg& dm) {
         if (dm.source == buddy) {
@@ -16,11 +15,17 @@ caf::behavior TruckBehind(caf::io::broker *self, caf::io::connection_handle hdl,
             self->quit(dm.reason);
         }
     });
+    self->link_to(buddy);
+    self->set_exit_handler([=](caf::exit_msg& ms){
+        if (ms.source == buddy) {
+            aout(self) << "My Mate is dead" << std::endl;
+            self->quit(ms.reason);
+        }
+    });
     
     self->send(buddy, set_server_atom_v);
     self->configure_read(hdl, caf::io::receive_policy::at_least(sizeof(uint8_t)+sizeof(uint32_t)));
     return{
-        
         [=](const caf::io::connection_closed_msg& msg) {
           if (msg.handle == hdl) {
             aout(self) << "[SERVER]: Connection closed" << std::endl;
@@ -28,7 +33,6 @@ caf::behavior TruckBehind(caf::io::broker *self, caf::io::connection_handle hdl,
               self->quit(caf::exit_reason::remote_link_unreachable);
           }
             
-        
         },[=](const caf::io::new_connection_msg& msg) {
             aout(self) << "[SERVER]: New Connection_Accepted" << std::endl;
             write_int(self, hdl, static_cast<uint8_t>(operations::get_port_host));
@@ -60,6 +64,8 @@ caf::behavior TruckBehind(caf::io::broker *self, caf::io::connection_handle hdl,
                       write_int(self, hdl, Id);
                       self->flush(hdl);
                   });
+                
+                  
                   break;
               case operations::update_truck_behind:
                   std::cout << "ok";
@@ -78,14 +84,22 @@ caf::behavior TruckBehind(caf::io::broker *self, caf::io::connection_handle hdl,
     
           
           
+      },[=](update_id_behind_atom, uint32_t newId){
+          std::cout<<"Started\n";
+          write_int(self, hdl, static_cast<uint8_t>(operations::get_id));
+          write_int(self, hdl, newId);
+          self->flush(hdl);
+      },[=](tell_back_im_master_atom){
+          std::cout<<"Started\n";
+          write_int(self, hdl, static_cast<uint8_t>(operations::master));
+          write_int(self, hdl, int32_t(1));
+          self->flush(hdl);
       },[=](const caf::io::new_datagram_msg& msg) {
           auto rd_pos = msg.buf.data();
           char cstr[3];
           *cstr = 'v';
           memcpy(cstr, rd_pos, 1);
           std::cout << cstr;
-    
-    
       }
 
     };

@@ -18,6 +18,7 @@
 #include "InputMonitor.hpp"
 #include "utils.h"
 
+
 struct Truck{
     std::string sName_ = "Name";
     int32_t iId_;
@@ -26,10 +27,12 @@ struct Truck{
     std::map<int32_t, caf::strong_actor_ptr> mPlatoon;
     uint16_t uPort = 4242;
     std::string sHost = "localhost";
+    bool bMasterConnection;
     
 public:
     caf::strong_actor_ptr server;
     
+    bool isMasterConnection();
     std::string getName();
     int32_t getId();
     int32_t getFrontId();
@@ -38,6 +41,7 @@ public:
     std::string getHost();
     float getSpeed();
     
+    void setMasterConnection(bool res);
     void setName(std::string name);
     void setId(int32_t id);
     void setFrontId(int32_t id);
@@ -49,15 +53,13 @@ public:
 caf::behavior truck(caf::stateful_actor<Truck>* self);
 caf::behavior master(caf::stateful_actor<Truck>* self);
 
-caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl, const caf::actor& buddy);
-
-caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl, const caf::actor& buddy);
-
+caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handle hdl, const caf::actor& buddy);
+caf::behavior temp_master_server(caf::io::broker* self, const caf::actor& buddy);
 
 caf::behavior TruckBehind(caf::io::broker *self, caf::io::connection_handle hdl,const caf::actor& buddy);
 caf::behavior temp_server(caf::io::broker *self,const caf::actor& buddy);
 
-
+caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl, const caf::actor& buddy);
 
 
 
