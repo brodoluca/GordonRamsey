@@ -18,38 +18,6 @@
 #include "InputMonitor.hpp"
 #include "utils.h"
 
-CAF_BEGIN_TYPE_ID_BLOCK(truck_block, first_custom_type_id)
-CAF_ADD_ATOM(truck_block, initialize_atom)
-CAF_ADD_ATOM(truck_block, send_server_atom)
-CAF_ADD_ATOM(truck_block, get_new_id_atom)
-CAF_ADD_ATOM(truck_block, update_port_host_atom)
-CAF_ADD_ATOM(truck_block, become_client_atom)
-CAF_ADD_ATOM(truck_block, assign_id_atom)
-CAF_ADD_ATOM(truck_block, get_new_command)
-CAF_ADD_ATOM(truck_block, become_master_atom)
-CAF_ADD_ATOM(truck_block, send_new_command_atom)
-CAF_ADD_ATOM(truck_block, set_server_atom)
-CAF_ADD_ATOM(truck_block, which_id_atom)
-CAF_ADD_ATOM(truck_block, set_front_id)
-CAF_END_TYPE_ID_BLOCK(truck_block)
-
-
-
-
-enum class operations : uint8_t {
-    assign_id,
-    get_id,
-    command,
-    front_id
-};
-
-enum class commands : uint32_t{
-    stop,
-    accellerate,
-    decellerate,
-    start
-};
-
 struct Truck{
     std::string sName_ = "Name";
     int32_t iId_;

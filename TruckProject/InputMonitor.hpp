@@ -13,7 +13,7 @@
 #include "caf/io/all.hpp"
 #include "Truck.hpp"
 //USE BLOCKING ACTORS
-namespace{
+
 
 
 struct InputMonitorState{
@@ -23,7 +23,7 @@ public:
     static inline const char* name = "InputMonitor";
 };
 
-caf::behavior InputMonitor(caf::stateful_actor<InputMonitorState>* self) {
+inline caf::behavior InputMonitor(caf::stateful_actor<InputMonitorState>* self) {
     return{
         [=](int32_t a){
             while(1){
@@ -54,7 +54,7 @@ caf::behavior InputMonitor(caf::stateful_actor<InputMonitorState>* self) {
         }
     };
 }
-}
+
 
 
 #endif /* InputMonitor_hpp */

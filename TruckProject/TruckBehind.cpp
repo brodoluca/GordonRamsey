@@ -18,11 +18,14 @@ caf::behavior TruckBehind(caf::io::broker *self, caf::io::connection_handle hdl,
     self->send(buddy, set_server_atom_v);
     self->configure_read(hdl, caf::io::receive_policy::at_most(sizeof(uint8_t)+sizeof(uint32_t)));
     return{
-        [=](const caf::io::new_connection_msg& msg) {
+        [=](const caf::io::connection_closed_msg& msg) {
+          if (msg.handle == hdl) {
+            aout(self) << "[SERVER]: Connection closed" << std::endl;
+              self->send_exit(buddy, caf::exit_reason::remote_link_unreachable);
+              self->quit(caf::exit_reason::remote_link_unreachable);
+          }
+        },[=](const caf::io::new_connection_msg& msg) {
             aout(self) << "[SERVER]: New Connection_Accepted" << std::endl;
-            
-
-        
       },[=](send_new_command_atom, uint32_t command){
           std::cout<<"Started\n";
           write_int(self, hdl, static_cast<uint8_t>(operations::command));
