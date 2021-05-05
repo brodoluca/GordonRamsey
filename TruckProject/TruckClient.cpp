@@ -23,6 +23,8 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
     });
 //    configure to exactly receive this much data
     self->configure_read(hdl, caf::io::receive_policy::at_most(sizeof(uint8_t)+sizeof(uint32_t)+sizeof(char)*17));
+    std::cout << "Hey, Im alive\n";
+    self->send(buddy, 1);
     return {
         [=](const caf::io::connection_closed_msg& msg){
           if (msg.handle == hdl) {

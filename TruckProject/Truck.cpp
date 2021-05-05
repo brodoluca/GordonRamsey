@@ -18,6 +18,9 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         self->send_exit(caf::actor_cast<caf::actor>(self->state.server),caf::exit_reason::remote_link_unreachable);
     });
     return{
+        [](int a){
+                     std::cout << "ok\n";
+        },
         [=](initialize_atom,std::string name) {
             self->state.setName(name);
             std::cout<<self->state.getName() + " has been spawned \n";
