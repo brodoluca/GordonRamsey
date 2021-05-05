@@ -54,10 +54,10 @@ CAF_MAIN(caf::io::middleman, caf::id_block::truck_block)
 
 
 caf::behavior server(caf::io::broker* self, const caf::actor& buddy) {
-  aout(self) << "[SERVER]: running" << std::endl;
+  std::cout << "[SERVER]: running" << std::endl;
   return {
     [=](const caf::io::new_connection_msg& msg) {
-      aout(self) << "[SERVER]: New Connection_Accepted" << std::endl;
+      std::cout << "[SERVER]: New Connection_Accepted" << std::endl;
       auto impl = self->fork(TruckServerMaster, msg.handle, std::move(buddy));
       print_on_exit(impl, "[SERVER]");
       self->quit();

@@ -13,22 +13,24 @@
 
 caf::behavior truck(caf::stateful_actor<Truck>* self){
     auto server = self->home_system().middleman().spawn_server(temp_server, 3232, caf::actor_cast<caf::actor>(self));
-    
+    self->attach_functor([=](const caf::error& reason) {
+        std:: cout << "Im down";
+        self->send_exit(caf::actor_cast<caf::actor>(self->state.server),caf::exit_reason::remote_link_unreachable);
+    });
     return{
-        [](int a){
-            std::cout << "ok\n";
-        },
         [=](initialize_atom,std::string name) {
             self->state.setName(name);
             std::cout<<self->state.getName() + " has been spawned \n";
             self->anon_send(caf::actor_cast<caf::actor>(self->current_sender()), initialize_atom_v);
         },
-        
         [=](set_front_id, int32_t newID) {
             return self->state.setFrontId(newID);
         },
         [=](which_id_atom) {
             return self->state.getId();
+        },
+        [=](which_front_id_atom) {
+            return self->state.getFrontId();
         },
         [=](get_new_id_atom, int32_t newID) {
             self->state.setId(newID);
@@ -41,13 +43,14 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         },
         [=](tell_back_im_master_atom) {
             self->send(caf::actor_cast<caf::actor>(self->state.server), tell_back_im_master_atom_v);
+           
         },
         [=](get_host_port_atom) {
             return std::make_pair(int32_t(self->state.getPort()),self->state.getHost());
         },
         [=](set_master_connection_atom, bool val) {
             self->state.setMasterConnection(val);
-            std::cout<< val << "New conn";
+//            std::cout<< val << "New conn";
         },
         [=](is_master_atom) {
             return self->state.isMasterConnection();
@@ -91,40 +94,57 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
                 
             
             }
-            
+    
         },
         [=](become_master_atom){
             std::cout << "I am the new master\n";
             self->become(master(self));
             self->state.setId(64);
+            self->send(self, update_id_behind_atom_v);
+            self->send(self, tell_back_im_master_atom_v);
+            self->delayed_send(self,std::chrono::seconds(3) ,update_port_host_atom_v);
         },[=](set_server_atom){
             self->state.server = self->current_sender();
             self->attach_functor([=](const caf::error& reason) {
-                std:: cout << "Server Down";
+                std:: cout << "Server down";
                 self->send_exit(caf::actor_cast<caf::actor>(self->state.server),caf::exit_reason::remote_link_unreachable);
             });
-            
+        
         },[=](update_id_behind_atom) {
             self->anon_send(caf::actor_cast<caf::actor>(self->state.server), update_id_behind_atom_v,self->state.getId()-1);
+        },
+        [=](tell_back_im_master_atom) {
+            self->send(caf::actor_cast<caf::actor>(self->state.server), tell_back_im_master_atom_v);
+        },[=](update_port_host_atom) {
+//            self->send(caf::actor_cast<caf::actor>(self->state.server), update_port_host_atom_v);
         },[=](update_master_atom, std::string host, uint16_t port) {
             auto impl = self->home_system().middleman().spawn_client(TruckClient, host, port, caf::actor_cast<caf::actor>(self->address()));
         }
     };
-
+    
 }
-
-
 
 
 
 caf::behavior master(caf::stateful_actor<Truck>* self){;
     return {
+        [=](become_master_atom){
+            std::cout << "I am the new master\n";
+            self->anon_send(caf::actor_cast<caf::actor>(self->current_sender()), you_are_master_atom_v);
+        },
         [=](assign_id_atom){
             return self->state.getId() - 1;
         },[=](update_id_behind_atom) {
-            self->anon_send(caf::actor_cast<caf::actor>(self->state.server), update_id_behind_atom_v,self->state.getId()-1);
+            self->anon_send(caf::actor_cast<caf::actor>(self->state.server), update_id_behind_atom_v,uint32_t{self->state.getId()-uint32_t(1)});
         },
-        
+        [=](tell_back_im_master_atom) {
+            self->send(caf::actor_cast<caf::actor>(self->state.server), tell_back_im_master_atom_v);
+        },[=](update_port_host_atom) {
+            self->send(caf::actor_cast<caf::actor>(self->state.server),update_truck_behind_port_host_atom_v, self->state.getPort(), self->state.getHost());
+        },[=](get_host_port_atom) {
+            return std::make_pair(int32_t(self->state.getPort()),self->state.getHost());
+        },
+
     };
 }
 
@@ -141,6 +161,7 @@ int32_t Truck::getId(){
 int32_t Truck::getFrontId(){
     return iFrontId_;
 }
+
 float Truck::getSpeed(){
     return fSpeed;
 }
