@@ -13,16 +13,17 @@
 
 caf::behavior truck(caf::stateful_actor<Truck>* self){
     auto server = self->home_system().middleman().spawn_server(temp_server, 3232, caf::actor_cast<caf::actor>(self));
-    self->attach_functor([=](const caf::error& reason) {
-        std:: cout << "Im down";
-        self->send_exit(caf::actor_cast<caf::actor>(self->state.server),caf::exit_reason::remote_link_unreachable);
-    });
+    
     return{
+        [](int a){
+            std::cout << "ok\n";
+        },
         [=](initialize_atom,std::string name) {
             self->state.setName(name);
-            aout(self)<<self->state.getName() + " has been spawned \n";
+            std::cout<<self->state.getName() + " has been spawned \n";
             self->anon_send(caf::actor_cast<caf::actor>(self->current_sender()), initialize_atom_v);
         },
+        
         [=](set_front_id, int32_t newID) {
             return self->state.setFrontId(newID);
         },
@@ -35,7 +36,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         },
         
         [=](you_are_master_atom) {
-            aout(self) << "I am the new master\n";
+            std::cout << "I am the new master\n";
             self->send(caf::actor_cast<caf::actor>(self->current_sender()), you_are_master_atom_v);
         },
         [=](tell_back_im_master_atom) {
@@ -93,21 +94,23 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
             
         },
         [=](become_master_atom){
-            aout(self) << "I am the new master\n";
+            std::cout << "I am the new master\n";
             self->become(master(self));
             self->state.setId(64);
         },[=](set_server_atom){
             self->state.server = self->current_sender();
             self->attach_functor([=](const caf::error& reason) {
-                std:: cout << "Im down";
+                std:: cout << "Server Down";
                 self->send_exit(caf::actor_cast<caf::actor>(self->state.server),caf::exit_reason::remote_link_unreachable);
             });
             
         },[=](update_id_behind_atom) {
             self->anon_send(caf::actor_cast<caf::actor>(self->state.server), update_id_behind_atom_v,self->state.getId()-1);
+        },[=](update_master_atom, std::string host, uint16_t port) {
+            auto impl = self->home_system().middleman().spawn_client(TruckClient, host, port, caf::actor_cast<caf::actor>(self->address()));
         }
     };
-    
+
 }
 
 

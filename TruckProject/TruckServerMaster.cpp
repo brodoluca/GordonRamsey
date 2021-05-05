@@ -13,7 +13,7 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
         self->monitor(buddy);
         self->set_down_handler([=](caf::down_msg& dm) {
             if (dm.source == buddy) {
-                aout(self) << "My Mate is down" << std::endl;
+                std::cout << "My Mate is down" << std::endl;
                 self->quit(dm.reason);
             }
         });
@@ -25,11 +25,11 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
     self->send(buddy, update_id_behind_atom_v);
         return {
             [=](you_are_master_atom) {
-                aout(self) << "I am the new master\n";
+                std::cout << "I am the new master\n";
             },
             [=](const caf::io::connection_closed_msg& msg) {
               if (msg.handle == hdl) {
-                aout(self) << "[SERVER]: Connection closed" << std::endl;
+                std::cout << "[SERVER]: Connection closed" << std::endl;
                   self->send_exit(buddy, caf::exit_reason::remote_link_unreachable);
                   self->quit(caf::exit_reason::remote_link_unreachable);
                   
@@ -79,14 +79,14 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
                         break;
                         
                   default:
-                        aout(self) << "invalid value for op_val, stop" << std::endl;
+                        std::cout << "invalid value for op_val, stop" << std::endl;
                         self->quit(caf::sec::invalid_argument);
                 };
                 self->send_exit(input, caf::exit_reason::remote_link_unreachable);
             },
             
             [=](const caf::io::new_connection_msg& msg) {
-                aout(self) << "[SERVER]: New Connection_Accepted" << std::endl;
+                std::cout << "[SERVER]: New Connection_Accepted" << std::endl;
                 self->request(buddy, std::chrono::seconds(2), assign_id_atom_v).then([=](int32_t newId){
                     write_int(self, hdl, static_cast<uint8_t>(operations::get_id));
                     write_int(self, hdl, newId);
@@ -101,12 +101,12 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
 
 
 caf::behavior temp_master_server(caf::io::broker* self, const caf::actor& buddy) {
-  aout(self) << "[TEMP_SERVER]: running" << std::endl;
+  std::cout << "[TEMP_SERVER]: running" << std::endl;
     self->send(buddy, become_master_atom_v);
     print_on_exit(self, "TEMP_SERVER");
   return {
     [=](const caf::io::new_connection_msg& msg) {
-      aout(self) << "[SERVER]: New Connection_Accepted" << std::endl;
+      std::cout << "[SERVER]: New Connection_Accepted" << std::endl;
       auto impl = self->fork(TruckServerMaster, msg.handle, std::move(buddy));
       print_on_exit(impl, "[SERVER]");
       self->quit();

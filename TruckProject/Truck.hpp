@@ -52,7 +52,6 @@ public:
 
 caf::behavior truck(caf::stateful_actor<Truck>* self);
 caf::behavior master(caf::stateful_actor<Truck>* self);
-
 caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handle hdl, const caf::actor& buddy);
 caf::behavior temp_master_server(caf::io::broker* self, const caf::actor& buddy);
 
