@@ -8,9 +8,8 @@
 #include "Truck.hpp"
 
 caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl, const caf::actor& buddy){
-//    Should be more than one,
-//    Change later
-    auto a = self->remote_port(hdl);
+    
+    
     assert(self->num_connections() == 1);
     self->monitor(buddy);
     self->set_down_handler([=](caf::down_msg& dm) {
@@ -21,8 +20,10 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
             
         }
     });
-//    configure to exactly receive this much data
+//    retrieve port for the connection, this can be done within the lambda, however now it works so im not going to fuck things up. Again.
+    auto a = self->remote_port(hdl);
     self->configure_read(hdl, caf::io::receive_policy::at_most(sizeof(uint8_t)+sizeof(uint32_t)+sizeof(char)*17));
+//    sanity check (For my sanity)
     std::cout << "Hey, Im alive\n";
     self->send(buddy, 1);
     return {
@@ -50,7 +51,7 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
         
         },
         [=](initialize_atom) {
-            std::cout << "[CLIENT]: Send Server: " << "" << std::endl;
+//            std::cout << "[CLIENT]: Send Server: " << "" << std::endl;
             write_int(self, hdl, static_cast<uint8_t>(operations::assign_id));
             write_int(self, hdl,static_cast<int32_t>(2));
             self->flush(hdl);
@@ -58,6 +59,7 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
         },[=](update_master_atom, std::string host, uint16_t port) {
             //            auto impl = self->home_system().middleman().spawn_client(TruckClient, host, port, std::move(buddy));
             //            self->quit();
+//            I was trying stuff here. Can be useful in the future
         },
         [=](const caf::io::new_data_msg& msg) {
             // Keeps track of our position in the buffer.
@@ -68,6 +70,7 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
             ++rd_pos;
             auto val = uint32_t{0};
             read_int(rd_pos, val);
+//            This is insanely ugly. But gets things done.
             uint32_t temp_length = val & 0b11111111111111110000000000000000;
             uint16_t temp = temp_length>>16;
             uint16_t temp_port = val & 0xFFFFFFFF>>16;
@@ -91,7 +94,7 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
 //                    break;
                 case operations::master:
                     self->anon_send(buddy, set_master_connection_atom_v, bool(val));
-                    std::cout << "master"  << val << "\n";
+                    std::cout << "[CLIENT] :master connection : "  << val << "\n";
                     break;
                 case operations::update_id_behind:
                     self->send(buddy, update_id_behind_atom_v);
@@ -115,7 +118,7 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
                                 });
                     break;
                 case operations::ready:
-                    std::cout << val;
+//                    std::cout << val;
                     write_int(self, hdl, static_cast<uint8_t>(operations::assign_id));
                     write_int(self, hdl, 1);
                     self->flush(hdl);
@@ -131,8 +134,8 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
                     self->quit();
                     break;
               default:
-                std::cout << "invalid value for op_val, stop" << std::endl;
-                    self->quit(caf::sec::invalid_argument);
+                std::cout << "Invalid value for op_val, stop" << std::endl;
+//                    self->quit(caf::sec::invalid_argument);
                     break;
             };
 

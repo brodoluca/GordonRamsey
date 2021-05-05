@@ -5,9 +5,10 @@
 //  Created by Luca on 02/05/21.
 //
 #include "Truck.hpp"
-#include "string.h"
-#include <cstdint>
-#include <iomanip>
+
+
+
+
 caf::behavior TruckBehind(caf::io::broker *self, caf::io::connection_handle hdl,const caf::actor& buddy){
     self->monitor(buddy);
     self->set_down_handler([=](caf::down_msg& dm) {
@@ -107,17 +108,6 @@ caf::behavior TruckBehind(caf::io::broker *self, caf::io::connection_handle hdl,
           write_int(self, hdl, static_cast<uint8_t>(operations::master));
           write_int(self, hdl, uint32_t(1));
           self->flush(hdl);
-//          self->request(buddy, std::chrono::seconds(2), get_host_port_atom_v).then(
-//                  [=](std::pair<int32_t, std::string> pHostPort){
-//                      char temp[17];
-//                      std::strcpy(temp, pHostPort.second.c_str());
-//                      for(unsigned long i=pHostPort.second.length();i<17;i++)
-//                          temp[i] = '-';
-//                      write_int(self, hdl, static_cast<uint8_t>(operations::update_truck_behind));
-//                      write_int(self, hdl, pHostPort.first);
-//                      self->write(hdl, sizeof(char)*17, temp);
-//                      self->flush(hdl);
-//        });
         
       },[=](update_truck_behind_port_host_atom, uint16_t port, std::string Host){
           std::cout<<"Update port host Id\n";
@@ -133,6 +123,12 @@ caf::behavior TruckBehind(caf::io::broker *self, caf::io::connection_handle hdl,
       }
     };
 };
+
+
+
+
+//Temporary server to allow the truck behind to connect to this truck
+//This actor will die as soon as a connection is created.
 caf::behavior temp_server(caf::io::broker *self,const caf::actor& buddy){
     return{
         [=](const caf::io::new_connection_msg& msg) {

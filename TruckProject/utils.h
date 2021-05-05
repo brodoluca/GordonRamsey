@@ -91,6 +91,9 @@ CAF_ADD_ATOM(truck_block, you_are_master_atom)
 CAF_ADD_ATOM(truck_block, tell_back_im_master_atom)
 CAF_ADD_ATOM(truck_block, update_truck_behind_port_host_atom)
 CAF_ADD_ATOM(truck_block, update_master_atom)
+
+CAF_ADD_ATOM(truck_block, ask_for_input_atom)
+CAF_ADD_ATOM(truck_block, update_number_trucks_atom)
 CAF_ADD_TYPE_ID(truck_block, (std::pair<int32_t, std::string>) )
 
 CAF_END_TYPE_ID_BLOCK(truck_block)

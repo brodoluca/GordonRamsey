@@ -10,6 +10,8 @@
 //
 // Implementation of the Truck Actor
 //
+using truck_quantity = int32_t;
+
 
 caf::behavior truck(caf::stateful_actor<Truck>* self){
     auto server = self->home_system().middleman().spawn_server(temp_server, 3232, caf::actor_cast<caf::actor>(self));
@@ -105,7 +107,8 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
             self->state.setId(64);
             self->send(self, update_id_behind_atom_v);
             self->send(self, tell_back_im_master_atom_v);
-            self->delayed_send(self,std::chrono::seconds(3) ,update_port_host_atom_v);
+//            let's wait a bit, we dont want to overflow the buffer
+            self->delayed_send(self,std::chrono::seconds(2) ,update_port_host_atom_v);
         },[=](set_server_atom){
             self->state.server = self->current_sender();
             self->attach_functor([=](const caf::error& reason) {
@@ -129,7 +132,9 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
 
 
 
-caf::behavior master(caf::stateful_actor<Truck>* self){;
+caf::behavior master(caf::stateful_actor<Truck>* self){
+    
+    truck_quantity tqPlatoon = 0;
     return {
         [=](become_master_atom){
             std::cout << "I am the new master\n";
@@ -146,6 +151,9 @@ caf::behavior master(caf::stateful_actor<Truck>* self){;
             self->send(caf::actor_cast<caf::actor>(self->state.server),update_truck_behind_port_host_atom_v, self->state.getPort(), self->state.getHost());
         },[=](get_host_port_atom) {
             return std::make_pair(int32_t(self->state.getPort()),self->state.getHost());
+        },
+        [&](update_number_trucks_atom, truck_quantity platoon) {
+            tqPlatoon = platoon;
         },
 
     };

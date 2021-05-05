@@ -12,6 +12,10 @@
 #include <string>
 #include <iostream>
 
+#include "string.h"
+#include <cstdint>
+#include <iomanip>
+
 #include "caf/all.hpp"
 #include "caf/io/all.hpp"
 
@@ -20,15 +24,6 @@
 
 
 struct Truck{
-    std::string sName_ = "Name";
-    int32_t iId_;
-    int32_t iFrontId_;
-    float fSpeed;
-    std::map<int32_t, caf::strong_actor_ptr> mPlatoon;
-    uint16_t uPort = 4242;
-    std::string sHost = "localhost";
-    bool bMasterConnection;
-    
 public:
     caf::strong_actor_ptr server;
     
@@ -48,6 +43,21 @@ public:
     void setSpeed(float speed);
     void setPort(uint16_t port);
     void setHost(std::string host);
+    
+    
+private:
+    
+    std::string sName_ = "Name";
+    int32_t iId_;
+    int32_t iFrontId_;
+    float fSpeed;
+    uint16_t uPort = 4242;
+    std::string sHost = "localhost";
+    bool bMasterConnection; //are we connected to the master directly?
+//    Old way of thinking, should be changed into ip addres and port.
+    std::map<int32_t, caf::strong_actor_ptr> mPlatoon;
+    
+    
 };
 
 caf::behavior truck(caf::stateful_actor<Truck>* self);

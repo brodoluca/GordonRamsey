@@ -16,13 +16,19 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
                 self->quit(dm.reason);
             }
         });
-
+    self->delayed_send(self, std::chrono::seconds(2), ask_for_input_atom_v);
     self->configure_read(hdl, caf::io::receive_policy::exactly(sizeof(uint8_t)+sizeof(uint32_t)));
 //    Become master
     self->send(buddy, become_master_atom_v);
     self->send(buddy, update_id_behind_atom_v);
         return {
-            [=](you_are_master_atom) {
+            [=](ask_for_input_atom){
+                auto input = self->home_system().spawn(InputMonitor);
+                self->send(input, 1);
+//                poll for input every 4 seconds
+                self->delayed_send(self, std::chrono::seconds(4), ask_for_input_atom_v);
+            
+            },[=](you_are_master_atom) {
                 std::cout << "I am the new master now\n";
                 write_int(self, hdl, static_cast<uint8_t>(operations::ready));
                 write_int(self, hdl, 1);
@@ -31,11 +37,11 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
             [=](const caf::io::connection_closed_msg& msg) {
               if (msg.handle == hdl) {
                 std::cout << "[SERVER]: Connection closed" << std::endl;
-                  self->send_exit(buddy, caf::exit_reason::remote_link_unreachable);
-                  self->quit(caf::exit_reason::remote_link_unreachable);
+//                  self->send_exit(buddy, caf::exit_reason::remote_link_unreachable);
+//                  self->quit(caf::exit_reason::remote_link_unreachable);
               }
             },
-    
+
             [=](uint32_t a) {
 //                YOU CAN USE THIS PART TO SEND COMMANDS TO THE TRUCK
                 write_int(self, hdl, static_cast<uint8_t>(operations::command));
@@ -67,8 +73,8 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
                 ++rd_pos;
                 auto val = uint32_t{0};
                 read_int(rd_pos, val);
-                auto input = self->home_system().spawn(InputMonitor);
-                self->send(input, 1);
+                
+                
                 switch (static_cast<operations>(op_val)) {
                     case operations::assign_id:
                         self->request(buddy, std::chrono::seconds(2), assign_id_atom_v).then([=](int32_t newId){
@@ -83,12 +89,12 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
                         write_int(self, hdl, int32_t(1));
                         self->flush(hdl);
                         break;
-                        
+                    
                   default:
                         std::cout << "invalid value for op_val, stop" << std::endl;
                         self->quit(caf::sec::invalid_argument);
                 };
-                self->send_exit(input, caf::exit_reason::remote_link_unreachable);
+               
             },[=](const caf::io::new_connection_msg& msg) {
                 std::cout << "[SERVER]: New Connection_Accepted" << std::endl;
                 self->request(buddy, std::chrono::seconds(2), assign_id_atom_v).then([=](int32_t newId){
