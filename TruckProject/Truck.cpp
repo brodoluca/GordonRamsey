@@ -10,7 +10,7 @@
 //
 // Implementation of the Truck Actor
 //
-using truck_quantity = int32_t;
+
 
 
 caf::behavior truck(caf::stateful_actor<Truck>* self){
@@ -26,6 +26,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         [=](initialize_atom,std::string name) {
             self->state.setName(name);
             std::cout<<self->state.getName() + " has been spawned \n";
+            self->state.client = self->current_sender();
             self->anon_send(caf::actor_cast<caf::actor>(self->current_sender()), initialize_atom_v);
         },
         [=](set_front_id, int32_t newID) {
@@ -41,7 +42,6 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
             self->state.setId(newID);
             self->send(caf::actor_cast<caf::actor>(self->current_sender()), is_master_atom_v);
         },
-        
         [=](you_are_master_atom) {
             std::cout << "I am the new master\n";
             self->send(caf::actor_cast<caf::actor>(self->current_sender()), you_are_master_atom_v);
@@ -96,10 +96,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
                     break;
                 default:
                     break;
-                
-            
             }
-    
         },
         [=](become_master_atom){
             std::cout << "I am the new master\n";
@@ -125,7 +122,21 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
 //            self->send(caf::actor_cast<caf::actor>(self->state.server), update_port_host_atom_v);
         },[=](update_master_atom, std::string host, uint16_t port) {
             auto impl = self->home_system().middleman().spawn_client(TruckClient, host, port, caf::actor_cast<caf::actor>(self->address()));
-        }
+        
+        },[=](increment_number_trucks_atom, uint32_t newPlatoon){
+            self->anon_send(caf::actor_cast<caf::actor>(self->state.client), increment_number_trucks_atom_v);
+            self->state.tqPlatoon += newPlatoon;
+            std::cout << "PLATOON: "<<self->state.tqPlatoon<<"\n";
+            
+        },
+        [=](cascade_port_host_atom, uint16_t newPort, std::string newHost, truck_quantity stopID) {
+            if (stopID == self->state.getId()) {
+//                place holder
+                std::cout << "Hey, that's it\n";
+            }else{
+                self->anon_send(caf::actor_cast<caf::actor>(self->state.server), cascade_port_host_atom_v, newPort, newHost, stopID);
+            }
+        },
     };
     
 }
@@ -134,7 +145,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
 
 caf::behavior master(caf::stateful_actor<Truck>* self){
     
-    truck_quantity tqPlatoon = 0;
+    
     return {
         [=](become_master_atom){
             std::cout << "I am the new master\n";
@@ -150,14 +161,17 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
         },[=](update_port_host_atom) {
             self->send(caf::actor_cast<caf::actor>(self->state.server),update_truck_behind_port_host_atom_v, self->state.getPort(), self->state.getHost());
         },[=](get_host_port_atom) {
+            
             return std::make_pair(int32_t(self->state.getPort()),self->state.getHost());
+        },[&](increment_number_trucks_atom, truck_quantity platoon) {
+            self->state.tqPlatoon = platoon;
+        },[&](increment_number_trucks_atom) {
+            self->state.tqPlatoon = self->state.tqPlatoon+1;
         },
-        [&](update_number_trucks_atom, truck_quantity platoon) {
-            tqPlatoon = platoon;
-        },
-
     };
 }
+
+
 
 
 //

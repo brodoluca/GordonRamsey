@@ -66,6 +66,7 @@ constexpr char http_error[] = "HTTP/1.1 404 Not Found\r\n"
 
 constexpr char newline[2] = {'\r', '\n'};
 
+#define MAX_TRUCKS 64
 
 CAF_BEGIN_TYPE_ID_BLOCK(truck_block, first_custom_type_id)
 CAF_ADD_ATOM(truck_block, initialize_atom)
@@ -91,9 +92,12 @@ CAF_ADD_ATOM(truck_block, you_are_master_atom)
 CAF_ADD_ATOM(truck_block, tell_back_im_master_atom)
 CAF_ADD_ATOM(truck_block, update_truck_behind_port_host_atom)
 CAF_ADD_ATOM(truck_block, update_master_atom)
+CAF_ADD_ATOM(truck_block, cascade_port_host_atom)
 
 CAF_ADD_ATOM(truck_block, ask_for_input_atom)
-CAF_ADD_ATOM(truck_block, update_number_trucks_atom)
+CAF_ADD_ATOM(truck_block, increment_number_trucks_atom)
+CAF_ADD_ATOM(truck_block, initialiaze_truck_platoon_atom)
+
 CAF_ADD_TYPE_ID(truck_block, (std::pair<int32_t, std::string>) )
 
 CAF_END_TYPE_ID_BLOCK(truck_block)
@@ -111,9 +115,12 @@ enum class operations : uint8_t {
     update_truck_behind,
     get_port_host,
     update_id_behind,
-    ready
+    ready,
+    cascade_port_host,
+    update_number_trucks,
+    initialiaze_truck_platoon,
+    try_luca
 };
-
 
 enum class commands : uint32_t{
     stop,

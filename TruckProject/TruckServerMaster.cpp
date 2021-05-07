@@ -28,6 +28,11 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
 //                poll for input every 4 seconds
                 self->delayed_send(self, std::chrono::seconds(4), ask_for_input_atom_v);
             
+            },[=](initialiaze_truck_platoon_atom){
+                write_int(self, hdl, static_cast<uint8_t>(operations::initialiaze_truck_platoon));
+                write_int(self, hdl, 1);
+                self->flush(hdl);
+        
             },[=](you_are_master_atom) {
                 std::cout << "I am the new master now\n";
                 write_int(self, hdl, static_cast<uint8_t>(operations::ready));
@@ -44,6 +49,10 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
 
             [=](uint32_t a) {
 //                YOU CAN USE THIS PART TO SEND COMMANDS TO THE TRUCK
+                std::string Host = "localhost";
+                char temp[20] = {'\0'};
+                uint16_t length = Host.length();
+                uint32_t message = 4242;
                 write_int(self, hdl, static_cast<uint8_t>(operations::command));
             
                 switch (a) {
@@ -59,6 +68,15 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
                     case 4:
                         write_int(self, hdl, static_cast<uint32_t>(commands::start));
                         break;
+                    case 5:
+                        while(Host.length()<15) Host.append("-");
+                        Host.append("064");
+                        length = Host.length();
+                        message |= length<<16;
+                        std::strcpy(temp, Host.c_str());
+                        write_int(self, hdl, static_cast<uint8_t>(operations::cascade_port_host));
+                        write_int(self, hdl, message);
+                        self->write(hdl, sizeof(char)*(length), temp);
                 
                     default:
                         break;
@@ -82,12 +100,15 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
                             write_int(self, hdl, newId);
                             self->flush(hdl);
                         });
-                    
+                        self->delayed_send(self,std::chrono::seconds(1),initialiaze_truck_platoon_atom_v);
                         break;
                     case operations::master:
                         write_int(self, hdl, static_cast<uint8_t>(operations::master));
                         write_int(self, hdl, int32_t(1));
                         self->flush(hdl);
+                        break;
+                    case operations::update_number_trucks:
+                        self->send(buddy, increment_number_trucks_atom_v,1);
                         break;
                     
                   default:
@@ -108,7 +129,6 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
         };
 }
 
-
 caf::behavior temp_master_server(caf::io::broker* self, const caf::actor& buddy) {
   std::cout << "[TEMP_SERVER]: running" << std::endl;
 //    self->send(buddy, become_master_atom_v);
@@ -116,7 +136,9 @@ caf::behavior temp_master_server(caf::io::broker* self, const caf::actor& buddy)
     [=](const caf::io::new_connection_msg& msg) {
       std::cout << "[SERVER]: New Connection_Accepted" << std::endl;
       auto impl = self->fork(TruckServerMaster, msg.handle, std::move(buddy));
+        self->send(buddy, increment_number_trucks_atom_v, truck_quantity(1));
       print_on_exit(self, "[SERVER]");
+        
       self->quit();
     },
   };

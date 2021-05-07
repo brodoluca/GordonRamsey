@@ -21,12 +21,13 @@
 
 #include "InputMonitor.hpp"
 #include "utils.h"
-
+using truck_quantity = int32_t;
 
 struct Truck{
 public:
     caf::strong_actor_ptr server;
-    
+    caf::strong_actor_ptr client;
+    truck_quantity tqPlatoon = 0;
     bool isMasterConnection();
     std::string getName();
     int32_t getId();
