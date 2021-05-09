@@ -4,7 +4,6 @@
 //
 //  Created by Luca on 02/05/21.
 //
-
 #include "Truck.hpp"
 caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl, const caf::actor& buddy){
     assert(self->num_connections() == 1);
@@ -38,6 +37,7 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
                 });
           }
         },
+        
         [=](is_master_atom) {
             write_int(self, hdl, static_cast<uint8_t>(operations::master));
             write_int(self, hdl, static_cast<uint32_t>(2));
@@ -136,7 +136,6 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
                     while (strlen(cstr) < temp+3) {
                         memcpy(&cstr, ++rd_pos, sizeof(char)*(temp+3));
                     }
-                    
                     ip = cstr;
                     memset(cstr, '0', sizeof(cstr));
                     ip.erase(ip.begin(), ip.begin()+3);
@@ -150,11 +149,13 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
                     while(ip.back() == '-') ip.pop_back();
 //                    std::cout << "ID:"<< tqStopId << "  PORT: "<<temp_port << "  LENGTH : "<<temp << "  "<<ip;
                     break;
-    
                 case operations::initialiaze_truck_platoon:
                     self->send(buddy, increment_number_trucks_atom_v, uint32_t(val));
                     break;
                 case operations::update_number_trucks_from_client:
+                    self->send(buddy, update_truck_numbers_atom_v,val);
+                    break;
+                case operations::update_number_trucks:
                     self->send(buddy, update_truck_numbers_atom_v,val);
                     break;
               default:

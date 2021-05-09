@@ -28,9 +28,6 @@ public:
 
 
 
-
-caf::behavior server(caf::io::broker* self, const caf::actor& buddy);
-
 void caf_main(caf::actor_system& system, const config& cfg) {
 
     caf::scoped_actor self{system};
@@ -47,25 +44,8 @@ void caf_main(caf::actor_system& system, const config& cfg) {
     print_on_exit(*server_actor, "CLIENT");
     print_on_exit(truck_actor, "TRUCK");
     
-    
 }
 CAF_MAIN(caf::io::middleman, caf::id_block::truck_block)
 
-
-
-
-
-
-caf::behavior server(caf::io::broker* self, const caf::actor& buddy) {
-  std::cout << "[SERVER]: running" << std::endl;
-  return {
-    [=](const caf::io::new_connection_msg& msg) {
-      std::cout << "[SERVER]: New Connection_Accepted" << std::endl;
-      auto impl = self->fork(TruckServerMaster, msg.handle, std::move(buddy));
-      print_on_exit(impl, "[SERVER]");
-      self->quit();
-    },
-  };
-}
 
 

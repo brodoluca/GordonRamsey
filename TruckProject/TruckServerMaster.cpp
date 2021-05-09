@@ -30,7 +30,7 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
         });
     
 //    self->send(buddy, update_id_behind_atom_v);
-    self->delayed_send(self, std::chrono::seconds(1), initialiaze_truck_platoon_atom_v);
+    self->delayed_send(self, std::chrono::milliseconds(10), initialiaze_truck_platoon_atom_v);
     
         return {
             [=](ask_for_input_atom){
@@ -40,12 +40,12 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
                 self->delayed_send(self, std::chrono::seconds(4), ask_for_input_atom_v);
             
             },[=](initialiaze_truck_platoon_atom){
+                self->send(buddy, increment_number_trucks_atom_v, uint32_t(1));
                 self->request(buddy, std::chrono::seconds(1), get_truck_numbers_atom_v).then([=](truck_quantity a ){
-                    write_int(self, hdl, static_cast<uint8_t>(operations::initialiaze_truck_platoon));
+                    write_int(self, hdl, static_cast<uint8_t>(operations::update_number_trucks));
                     write_int(self, hdl, uint32_t(a));
                     self->flush(hdl);
                 });
-        
             },[=](you_are_master_atom) {
                 std::cout << "I am the new master now\n";
 //                write_int(self, hdl, static_cast<uint8_t>(operations::ready));
@@ -123,7 +123,7 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
                         self->flush(hdl);
                         break;
                     case operations::update_number_trucks:
-                        self->send(buddy, increment_number_trucks_atom_v,1);
+//                        self->send(buddy, increment_number_trucks_atom_v,1);
                         break;
                     case operations::update_number_trucks_from_client:
                         self->send(buddy, update_truck_numbers_atom_v,val);
@@ -154,7 +154,7 @@ caf::behavior temp_master_server(caf::io::broker* self, const caf::actor& buddy)
     [=](const caf::io::new_connection_msg& msg) {
       std::cout << "[SERVER]: New Connection_Accepted" << std::endl;
       auto impl = self->fork(TruckServerMaster, msg.handle, std::move(buddy));
-        self->send(buddy, increment_number_trucks_atom_v, truck_quantity(1));
+//        self->send(buddy, increment_number_trucks_atom_v);
       print_on_exit(self, "[SERVER]");
         
       self->quit();

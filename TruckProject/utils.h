@@ -103,6 +103,9 @@ CAF_ADD_ATOM(truck_block, increment_number_trucks_atom)
 CAF_ADD_ATOM(truck_block, decrease_number_trucks_atom)
 CAF_ADD_ATOM(truck_block, get_truck_numbers_atom)
 CAF_ADD_ATOM(truck_block, update_truck_numbers_atom)
+
+
+
 CAF_ADD_TYPE_ID(truck_block, (std::pair<int32_t, std::string>) )
 
 CAF_END_TYPE_ID_BLOCK(truck_block)

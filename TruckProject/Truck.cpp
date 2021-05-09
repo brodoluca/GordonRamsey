@@ -128,7 +128,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
             self->delayed_anon_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::seconds(1), update_truck_numbers_atom_v, self->state.tqPlatoon);
             std::cout << "PLATOON HERE: "<<self->state.tqPlatoon<<"\n";
         },[=](decrease_number_trucks_atom){
-            self->state.tqPlatoon-=1;
+            self->state.tqPlatoon-=2;
             std::cout << "PLATOON HERE: "<<self->state.tqPlatoon<<"\n";
             
         },[=](update_truck_numbers_atom, uint32_t a ) {
@@ -168,18 +168,22 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
             return std::make_pair(int32_t(self->state.getPort()),self->state.getHost());
         },[=](update_id_behind_atom) {
             self->anon_send(caf::actor_cast<caf::actor>(self->state.server), update_id_behind_atom_v,uint32_t{self->state.getId()-uint32_t(1)});
-        },
-        [=](tell_back_im_master_atom) {
+        },[=](tell_back_im_master_atom) {
             self->send(caf::actor_cast<caf::actor>(self->state.server), tell_back_im_master_atom_v);
         },[=](update_port_host_atom) {
             self->send(caf::actor_cast<caf::actor>(self->state.server),update_truck_behind_port_host_atom_v, self->state.getPort(), self->state.getHost());
         },[&](increment_number_trucks_atom, truck_quantity platoon) {
             self->state.tqPlatoon = platoon;
-            std::cout <<self->state.tqPlatoon;
         },[&](increment_number_trucks_atom) {
             self->state.tqPlatoon = self->state.tqPlatoon+1;
         },[=](get_truck_numbers_atom) {
             return self->state.tqPlatoon;
+        },[=](increment_number_trucks_atom, uint32_t newPlatoon){
+            self->state.tqPlatoon += newPlatoon;
+            std::cout << "PLATOON: "<<self->state.tqPlatoon<<"\n";
+        },[=](update_truck_numbers_atom, uint32_t a ) {
+            self->state.tqPlatoon = a;
+            std::cout << "PLATOON : " << self->state.tqPlatoon;
         },
     };
 }
