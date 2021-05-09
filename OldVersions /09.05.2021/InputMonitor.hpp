@@ -42,6 +42,7 @@ inline caf::behavior InputMonitor(caf::stateful_actor<InputMonitorState>* self) 
                 }else{
                     self->quit();
                 }
+
             }
             else if(ret == 0)
             {
