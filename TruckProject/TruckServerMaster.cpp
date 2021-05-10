@@ -70,19 +70,23 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
                 char temp[20] = {'\0'};
                 uint16_t length = Host.length();
                 uint32_t message = 4242;
-                write_int(self, hdl, static_cast<uint8_t>(operations::command));
+               
             
                 switch (a) {
                     case 1:
+                        write_int(self, hdl, static_cast<uint8_t>(operations::command));
                         write_int(self, hdl, static_cast<uint32_t>(commands::stop));
                     break;
                     case 2:
+                        write_int(self, hdl, static_cast<uint8_t>(operations::command));
                         write_int(self, hdl, static_cast<uint32_t>(commands::accellerate));
                         break;
                     case 3:
+                        write_int(self, hdl, static_cast<uint8_t>(operations::command));
                         write_int(self, hdl, static_cast<uint32_t>(commands::decellerate));
                         break;
                     case 4:
+                        write_int(self, hdl, static_cast<uint8_t>(operations::command));
                         write_int(self, hdl, static_cast<uint32_t>(commands::start));
                         break;
                     case 5:
@@ -147,15 +151,15 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
         
         };
 }
+
 caf::behavior temp_master_server(caf::io::broker* self, const caf::actor& buddy) {
   std::cout << "[TEMP_SERVER]: running" << std::endl;
 //    self->send(buddy, become_master_atom_v);
   return {
     [=](const caf::io::new_connection_msg& msg) {
-      std::cout << "[SERVER]: New Connection_Accepted" << std::endl;
+      std::cout << "[TEMP_SERVER]: New Connection_Accepted" << std::endl;
       auto impl = self->fork(TruckServerMaster, msg.handle, std::move(buddy));
 //        self->send(buddy, increment_number_trucks_atom_v);
-      print_on_exit(self, "[SERVER]");
         
       self->quit();
     },
