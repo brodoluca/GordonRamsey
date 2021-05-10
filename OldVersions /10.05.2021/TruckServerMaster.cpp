@@ -38,6 +38,7 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
                 self->send(input, 1);
 //                poll for input every 4 seconds
                 self->delayed_send(self, std::chrono::seconds(4), ask_for_input_atom_v);
+            
             },[=](initialiaze_truck_platoon_atom){
                 self->send(buddy, increment_number_trucks_atom_v, uint32_t(1));
                 self->request(buddy, std::chrono::seconds(1), get_truck_numbers_atom_v).then([=](truck_quantity a ){
@@ -69,6 +70,8 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
                 char temp[20] = {'\0'};
                 uint16_t length = Host.length();
                 uint32_t message = 4242;
+               
+            
                 switch (a) {
                     case 1:
                         write_int(self, hdl, static_cast<uint8_t>(operations::command));
@@ -130,7 +133,6 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
                         self->send(buddy, update_truck_numbers_atom_v,val);
                         std::cout << "IM HERE: "<< val;
                         break;
-                    
                   default:
                         std::cout << "[MASTER]:invalid value for op_val, stop" << std::endl;
                         self->quit(caf::sec::invalid_argument);
@@ -148,14 +150,6 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
         
         };
 }
-
-
-
-
-
-
-
-
 caf::behavior temp_master_server(caf::io::broker* self, const caf::actor& buddy) {
   std::cout << "[TEMP_SERVER]: running" << std::endl;
 //    self->send(buddy, become_master_atom_v);

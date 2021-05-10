@@ -57,11 +57,14 @@ private:
     float fSpeed;
     uint16_t uPort = 4242;
     std::string sHost = "localhost";
-    uint16_t uPreviousTruckPort = 0;
-    std::string sPreviousTruckHost_ = "";
+    uint16_t uPreviousPort = 0;
+    std::string sPreviousHost_ = "";
     uint16_t uBackUpPort = 0;
     std::string sBackUpHost_ = "";
     bool bMasterConnection; //are we connected to the master directly?
+//    Old way of thinking, should be changed into ip addres and port.
+    std::map<int32_t, caf::strong_actor_ptr> mPlatoon;
+    
     
 };
 

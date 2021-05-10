@@ -140,32 +140,21 @@ caf::behavior TruckBehind(caf::io::broker *self, caf::io::connection_handle hdl,
 
 
 
+
 //Temporary server to allow the truck behind to connect to this truck
 //This actor will die as soon as a connection is created.
 caf::behavior temp_server(caf::io::broker *self,const caf::actor& buddy){
     return{
         [=](const caf::io::new_connection_msg& msg) {
-            
-            truck_quantity number_trucks=0;
-            self->request(buddy, std::chrono::seconds(2), get_truck_numbers_atom_v).await(
-                [&](truck_quantity tqNumberTrucks) mutable {
-                    number_trucks = tqNumberTrucks;
-            });
-            if(number_trucks<=MAX_TRUCKS){
-                std::cout << "[SERVER]: New Connection_Accepted" << std::endl;
-                auto impl = self->fork(TruckBehind, msg.handle,buddy);
-                self->send(impl, send_server_atom_v);
-                self->quit(caf::sec::invalid_argument);
-            }else{
-                std::cout << "[SERVER]: Connection_refused : too many trucks" << std::endl;
-                self->close(msg.handle);
-            }
+            std::cout << "[SERVER]: New Connection_Accepted" << std::endl;
+            auto impl = self->fork(TruckBehind, msg.handle,buddy);
+            self->send(impl, send_server_atom_v);
+            self->quit(caf::sec::invalid_argument);
       },[=](send_new_command_atom, int32_t command){
           std::cout<<"NO ONE TO SEND COMMANDS TO\n";
       },
         
     };
 }
-
 
 
