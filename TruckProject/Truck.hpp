@@ -22,9 +22,7 @@
 #include "InputMonitor.hpp"
 #include "utils.h"
 
-#define MAX_TRUCK 64
 
-using truck_quantity = int32_t;
 
 struct Truck{
 public:
@@ -67,7 +65,6 @@ private:
 
 caf::actor spawnNewTruck(caf::actor_system& system, std::string name, std::string host, uint16_t port);
 caf::actor spawnNewMaster(caf::actor_system& system,std::string name, std::string host , uint16_t port);
-
 
 
 caf::behavior truck(caf::stateful_actor<Truck>* self);

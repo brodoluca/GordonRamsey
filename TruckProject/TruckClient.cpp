@@ -35,7 +35,6 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
             In case is true, it becomes the new master
             IN case is false, nothing happens for now
          */
-        
         [=](const caf::io::connection_closed_msg& msg){
           if (msg.handle == hdl) {
                 std::cout << "[TRUCK]:Connection closed" << std::endl;

@@ -43,7 +43,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
 //            save reference to the server
             send_as(*server, self, set_server_atom_v);
             
-            
+        
 //            self->anon_send(caf::actor_cast<caf::actor>(self->current_sender()), initialize_atom_v);
         },
         
