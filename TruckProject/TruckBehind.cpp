@@ -50,6 +50,9 @@ caf::behavior TruckBehind(caf::io::broker *self, caf::io::connection_handle hdl,
       },[=](become_master_atom){
           std::cout<<"IM NEW MASTER\n";
           self->fork(TruckServerMaster, hdl, std::move(buddy));
+          self->quit();
+      },[=](update_truck_behind_port_host_atom, uint16_t p, std::string s){
+          std::cout<<"NO ONE TO SEND COMMANDS TO\n";
       },[=](const caf::io::new_data_msg& msg) {
           auto rd_pos = msg.buf.data();
           auto op_val = uint8_t{0};
@@ -143,9 +146,10 @@ caf::behavior TruckBehind(caf::io::broker *self, caf::io::connection_handle hdl,
 //Temporary server to allow the truck behind to connect to this truck
 //This actor will die as soon as a connection is created.
 caf::behavior temp_server(caf::io::broker *self,const caf::actor& buddy){
+    std::cout << "[SERVER]: SPAWNED" << std::endl;
+  
     return{
         [=](const caf::io::new_connection_msg& msg) {
-            
             truck_quantity number_trucks=0;
             self->request(buddy, std::chrono::seconds(2), get_truck_numbers_atom_v).await(
                 [&](truck_quantity tqNumberTrucks) mutable {
@@ -160,10 +164,22 @@ caf::behavior temp_server(caf::io::broker *self,const caf::actor& buddy){
                 std::cout << "[SERVER]: Connection_refused : too many trucks" << std::endl;
                 self->close(msg.handle);
             }
-      },[=](send_new_command_atom, int32_t command){
+        },[=](send_new_command_atom, uint32_t command){
           std::cout<<"NO ONE TO SEND COMMANDS TO\n";
-      },
-        
+        },[=](become_master_atom){
+            self->become(temp_master_server(self, buddy));
+        },
+        [=](tell_back_im_master_atom){
+          std::cout<<"NO ONE TO SEND COMMANDS TO\n";
+        },
+        [=](update_truck_behind_port_host_atom, uint16_t p, std::string s){
+          std::cout<<"NO ONE TO SEND COMMANDS TO\n";
+        },
+//        caf::others >> [=](const caf::message &m) -> caf::skippable_result {
+//            aout(self) << "[SERVER]: Unexpected message "<< std::endl;
+//            return ;
+//        }
+//
     };
 }
 

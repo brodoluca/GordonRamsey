@@ -50,6 +50,11 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
 //                write_int(self, hdl, static_cast<uint8_t>(operations::ready));
 //                write_int(self, hdl, 1);
 //                self->flush(hdl);
+            },[=](tell_back_im_master_atom){
+                std::cout<<"Telle back\n";
+                write_int(self, hdl, static_cast<uint8_t>(operations::master));
+                write_int(self, hdl, uint32_t(1));
+                self->flush(hdl);
             },
             [=](const caf::io::connection_closed_msg& msg) {
               if (msg.handle == hdl) {
@@ -166,6 +171,11 @@ caf::behavior temp_master_server(caf::io::broker* self, const caf::actor& buddy)
 //        self->send(buddy, increment_number_trucks_atom_v);
         
       self->quit();
-    },
+    },[=](tell_back_im_master_atom){
+//        std::cout<<"NO ONE TO SEND COMMANDS TO\n";
+        
+    },[=](update_truck_behind_port_host_atom, uint16_t p, std::string s){
+//        std::cout<<"NO ONE TO SEND COMMANDS TO\n";
+      },
   };
 }

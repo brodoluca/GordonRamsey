@@ -65,6 +65,11 @@ private:
     
 };
 
+caf::actor spawnNewTruck(caf::actor_system& system, std::string name, std::string host, uint16_t port);
+caf::actor spawnNewMaster(caf::actor_system& system,std::string name, std::string host , uint16_t port);
+
+
+
 caf::behavior truck(caf::stateful_actor<Truck>* self);
 caf::behavior master(caf::stateful_actor<Truck>* self);
 

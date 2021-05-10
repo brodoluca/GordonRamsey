@@ -103,7 +103,7 @@ CAF_ADD_ATOM(truck_block, increment_number_trucks_atom)
 CAF_ADD_ATOM(truck_block, decrease_number_trucks_atom)
 CAF_ADD_ATOM(truck_block, get_truck_numbers_atom)
 CAF_ADD_ATOM(truck_block, update_truck_numbers_atom)
-
+CAF_ADD_ATOM(truck_block, spawn_server_atom);
 
 
 CAF_ADD_TYPE_ID(truck_block, (std::pair<int32_t, std::string>) )
@@ -141,6 +141,20 @@ enum class commands : uint32_t{
     accellerate,
     decellerate,
     start
+};
+
+class config : public caf::actor_system_config {
+public:
+  uint16_t port = 4242;
+  std::string host = "localhost";
+  bool server_mode = false;
+
+  config() {
+    opt_group{custom_options_, "global"}
+      .add(port, "port,p", "set port")
+      .add(host, "host,H", "set host (ignored in server mode)");
+    
+  }
 };
 
 #endif /* utils_h */

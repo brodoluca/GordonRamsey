@@ -11,20 +11,39 @@
 // Implementation of the Truck Actor
 //
 caf::behavior truck(caf::stateful_actor<Truck>* self){
-    auto server = self->home_system().middleman().spawn_server(temp_server, 3232, caf::actor_cast<caf::actor>(self));
-    self->attach_functor([=](const caf::error& reason) {
-        std:: cout << "[TRUCK]: There is an error. REASON = "<< reason.category();
-        self->send_exit(caf::actor_cast<caf::actor>(self->state.server),caf::exit_reason::remote_link_unreachable);
-    });
+    
     return{
         /*
-                Initialize the truck with a name and we also save the reference to the client
+                Initialize the truck with a name and we also save the reference to the client.
         */
-        
         [=](initialize_atom,std::string name) {
             self->state.setName(name);
             std::cout<<self->state.getName() + " has been spawned \n";
             self->state.client = self->current_sender();
+            
+//            self->anon_send(caf::actor_cast<caf::actor>(self->current_sender()), initialize_atom_v);
+        },
+        
+        /*
+                Initialize the truck with a name and we also save the reference to the client.
+                In this version, a server for the truck behind is spawned
+        */
+        
+        [=](initialize_atom,std::string name, uint16_t port) {
+            self->state.setName(name);
+            std::cout<<self->state.getName() + " has been spawned \n";
+            self->state.client = self->current_sender();
+//            spawn server for communication
+            auto server = self->home_system().middleman().spawn_server(temp_server, port, caf::actor_cast<caf::actor>(self));
+            
+            self->attach_functor([=](const caf::error& reason) {
+                std:: cout << "[TRUCK]: There is an error. REASON = "<< to_string(reason);
+                self->send_exit(caf::actor_cast<caf::actor>(self->state.server),caf::exit_reason::remote_link_unreachable);
+            });
+//            save reference to the server
+            send_as(*server, self, set_server_atom_v);
+            
+            
 //            self->anon_send(caf::actor_cast<caf::actor>(self->current_sender()), initialize_atom_v);
         },
         
@@ -212,11 +231,15 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         },
         
         /*
-         Prototyping
+         Spawn the server required to communicate with the truck behind
         */
         
-        [=](update_port_host_atom) {
-//            self->send(caf::actor_cast<caf::actor>(self->state.server), update_port_host_atom_v);
+        [=](spawn_server_atom, uint16_t port) {
+            auto server = self->home_system().middleman().spawn_server(temp_server, port, caf::actor_cast<caf::actor>(self));
+            self->attach_functor([=](const caf::error& reason) {
+                std:: cout << "[TRUCK]: There is an error. REASON = "<< to_string(reason);
+                self->send_exit(caf::actor_cast<caf::actor>(self->state.server),caf::exit_reason::remote_link_unreachable);
+            });
         },
         
         /*
