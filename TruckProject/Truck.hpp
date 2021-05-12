@@ -29,6 +29,11 @@ public:
     caf::strong_actor_ptr server;
     caf::strong_actor_ptr client;
     truck_quantity tqPlatoon = 1;
+    
+    std::vector<caf::actor> vConnectionMultiplexer;
+    
+    
+    
     bool isMasterConnection();
     std::string getName();
     int32_t getId();
@@ -57,7 +62,6 @@ public:
     
     void setBackUpHost(std::string host);
     void setBackUpPort(uint16_t port);
-
 private:
     
     std::string sName_ = "Name";
@@ -83,6 +87,8 @@ caf::behavior master(caf::stateful_actor<Truck>* self);
 
 caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handle hdl, const caf::actor& buddy);
 caf::behavior temp_master_server(caf::io::broker* self, const caf::actor& buddy);
+caf::behavior TruckMasterMultiplexer(caf::io::broker *self, caf::io::connection_handle hdl, const caf::actor& buddy);
+
 
 caf::behavior TruckBehind(caf::io::broker *self, caf::io::connection_handle hdl,const caf::actor& buddy);
 caf::behavior temp_server(caf::io::broker *self,const caf::actor& buddy);

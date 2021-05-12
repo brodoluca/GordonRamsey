@@ -34,7 +34,10 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
             self->state.client = self->current_sender();
 //            spawn server for communication
             auto server = self->home_system().middleman().spawn_server(temp_server, port, caf::actor_cast<caf::actor>(self));
-           
+            if (!server) {
+                std::cerr << "failed to spawn "<< name << "'s client: " << to_string(server.error()) << "\n"<< std::endl;
+            }
+            
             self->state.setPort(port);
      
             self->attach_functor([=](const caf::error& reason) {
@@ -136,7 +139,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         */
         
         [=](you_are_master_atom) {
-            self->send(caf::actor_cast<caf::actor>(self->current_sender()), you_are_master_atom_v);
+            
         },
         
         /*
@@ -165,7 +168,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         [=](update_port_host_atom, uint16_t newPort, std::string newHost) {
             self->state.setPort(newPort);
             self->state.setHost(newHost);
-    
+            std::cout << self->state.getPort() << self->state.getHost() << std::endl;
         },
         
         /*
@@ -232,7 +235,6 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
             });
         
         },
-        
         /*
          sends to the server to update the id behind
         */
@@ -353,6 +355,16 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
             if(!im)
                 std::cerr << "failed to spawn "<< self->state.getName() << "'s client: " << to_string(im.error()) <<"\n"<< "\n\n"<< std::endl;
         },
+        
+        /*
+         Push back new caf actor into the vector
+        */
+        
+        
+        [=](add_connection_atom, const caf::actor& newConnection) {
+            self->state.vConnectionMultiplexer.push_back(std::move(newConnection));
+            std::cout << "[TRUCK]: New connection added. Number of connections : "<<self->state.vConnectionMultiplexer.size()<<std::endl;
+        },
     };
 }
 
@@ -360,8 +372,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
 caf::behavior master(caf::stateful_actor<Truck>* self){
     return {
         [=](become_master_atom){
-            std::cout << "[TRUCK]:I am the new master\n";
-            self->anon_send(caf::actor_cast<caf::actor>(self->current_sender()), you_are_master_atom_v);
+            std::cout << "[TRUCK]:I am already the master\n";
         },[=](set_server_atom) {
             self->state.server = self->current_sender();
             self->attach_functor([=](const caf::error& reason) {
@@ -373,6 +384,7 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
             return self->state.getId() - 1;
             
         },[=](get_host_port_atom) {
+            std::cout << self->state.getPort() << self->state.getHost() << std::endl;
             return std::make_pair(int32_t(self->state.getPort()),self->state.getHost());
             
         },[=](update_id_behind_atom) {
@@ -381,9 +393,9 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
             self->send(caf::actor_cast<caf::actor>(self->state.server), tell_back_im_master_atom_v);
         },[=](update_port_host_atom) {
             self->send(caf::actor_cast<caf::actor>(self->state.server),update_truck_behind_port_host_atom_v, self->state.getPort(), self->state.getHost());
-        },[&](increment_number_trucks_atom, truck_quantity platoon) {
+        },[=](increment_number_trucks_atom, truck_quantity platoon) {
             self->state.tqPlatoon = platoon;
-        },[&](increment_number_trucks_atom) {
+        },[=](increment_number_trucks_atom) {
             self->state.tqPlatoon = self->state.tqPlatoon+1;
         },[=](get_truck_numbers_atom) {
             return self->state.tqPlatoon;
@@ -403,6 +415,11 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
             std::cout << "[TRUCK]: Platoon after decreasing by a certain amount is : "<<self->state.tqPlatoon<<"\n";
             
         },
+        [=](add_connection_atom, const caf::actor& newConnection) {
+            self->state.vConnectionMultiplexer.push_back(std::move(newConnection));
+            std::cout << "[TRUCK]: New connection added. Number of connections : "<<self->state.vConnectionMultiplexer.size()<<std::endl;
+        },
+        
     };
 }
 

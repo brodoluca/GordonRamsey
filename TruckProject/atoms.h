@@ -55,6 +55,10 @@ CAF_ADD_ATOM(truck_block, get_port_host_back_up_atom);
 CAF_ADD_ATOM(truck_block, truck_left_or_dead_atom);
 
 CAF_ADD_ATOM(truck_block, fork_to_master_atom);
+
+CAF_ADD_ATOM(truck_block, add_connection_atom);
+
+
 CAF_ADD_TYPE_ID(truck_block, (std::pair<int32_t, std::string>) )
 
 CAF_END_TYPE_ID_BLOCK(truck_block)
