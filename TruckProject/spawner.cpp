@@ -6,8 +6,7 @@
 //
 
 #include "Truck.hpp"
-
-caf::actor spawnNewTruck(caf::actor_system& system,std::string name, std::string host , uint16_t port){
+caf::actor spawnNewTruck(caf::actor_system& system,std::string name, std::string host , uint16_t port, uint16_t own_port){
     auto truck_actor = system.spawn(truck);
     auto server_actor = system.middleman().spawn_client(TruckClient, host, port,truck_actor);
     caf::scoped_actor self{system};
@@ -16,18 +15,17 @@ caf::actor spawnNewTruck(caf::actor_system& system,std::string name, std::string
             throw "Are you sure the Ip and the port are correct? ";
         }
         print_on_exit(*server_actor, "CLIENT");
-        send_as(*server_actor,truck_actor, initialize_atom_v, name, uint16_t(3232));
-        send_as(*server_actor,truck_actor, update_port_host_atom_v, port,host);
+        send_as(*server_actor,truck_actor, initialize_atom_v, name, own_port);
+        send_as(*server_actor,truck_actor, update_port_host_atom_v, own_port,host);
     } catch (const char* msg) {
         self->send(truck_actor, initialize_atom_v, name, port);
         std::cerr << "failed to spawn "<< name << "'s client: " << to_string(server_actor.error()) <<"\n"<< msg << "\n\n"<< std::endl;
     }
+    
     print_on_exit(truck_actor, name);
     
     return truck_actor;
-    
 }
-
 
 
 caf::actor spawnNewMaster(caf::actor_system& system,std::string name, std::string host , uint16_t port){

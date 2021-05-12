@@ -22,7 +22,9 @@ enum class operations : uint8_t {
     update_number_trucks,
     initialiaze_truck_platoon,
     try_luca,
-    update_number_trucks_from_client
+    update_number_trucks_from_client,
+    update_port_host_previous,
+    update_port_host_back_up
 };
 
 enum class commands : uint32_t{

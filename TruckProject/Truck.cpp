@@ -28,22 +28,21 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
                 Initialize the truck with a name and we also save the reference to the client.
                 In this version, a server for the truck behind is spawned
         */
-        
         [=](initialize_atom,std::string name, uint16_t port) {
             self->state.setName(name);
             std::cout<<self->state.getName() + " has been spawned \n";
             self->state.client = self->current_sender();
 //            spawn server for communication
             auto server = self->home_system().middleman().spawn_server(temp_server, port, caf::actor_cast<caf::actor>(self));
-            
+           
+            self->state.setPort(port);
+     
             self->attach_functor([=](const caf::error& reason) {
                 std:: cout << "[TRUCK]: There is an error. REASON = "<< to_string(reason);
                 self->send_exit(caf::actor_cast<caf::actor>(self->state.server),caf::exit_reason::remote_link_unreachable);
             });
 //            save reference to the server
             send_as(*server, self, set_server_atom_v);
-            
-        
 //            self->anon_send(caf::actor_cast<caf::actor>(self->current_sender()), initialize_atom_v);
         },
         
@@ -62,6 +61,13 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         [=](is_master_atom) {
             return self->state.isMasterConnection();
             
+        },
+        /*
+         return the port
+        */
+        
+        [=](get_port_atom) {
+            return self->state.getPort();
         },
         
         /*
@@ -95,7 +101,19 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         [=](get_host_port_atom) {
             return std::make_pair(int32_t(self->state.getPort()),self->state.getHost());
         },
+        /*
+         return the port and the host PREVIOUS TRUCK  AS A C++ STRING
+        */
+        [=](get_port_host_previous_atom) {
+            return std::make_pair(int32_t(self->state.getPreviousPort()),self->state.getPreviousHost());
+        },
         
+        /*
+         return the port and the host PREVIOUS TRUCK  AS A C++ STRING
+        */
+        [=](get_port_host_back_up_atom) {
+            return std::make_pair(int32_t(self->state.getBackUpPort()),self->state.getBackUpHost());
+        },
         /*
          assign new atom and ask if it's a master connection
         */
@@ -147,6 +165,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         [=](update_port_host_atom, uint16_t newPort, std::string newHost) {
             self->state.setPort(newPort);
             self->state.setHost(newHost);
+    
         },
         
         /*
@@ -191,7 +210,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         */
         
         [=](become_master_atom){
-            std::cout << "[TRUCK]:I am the new master\n";
+            std::cout << "[TRUCK]: I am the new master\n";
             self->become(master(self));
             self->state.setId(MAX_TRUCKS);
 //            self->send(self, update_id_behind_atom_v);
@@ -250,19 +269,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
             auto impl = self->home_system().middleman().spawn_client(TruckClient, host, port, caf::actor_cast<caf::actor>(self->address()));
         
         },
-        
-        /*
-                Increments the numbers of trucks and tells back and fron to do it.
-                DONT USE THIS FUNCTION
-        */
-        
-        [=](increment_number_trucks_atom, uint32_t newPlatoon){
-            self->state.tqPlatoon += newPlatoon;
-            self->anon_send(caf::actor_cast<caf::actor>(self->state.client), increment_number_trucks_upwards_atom_v, uint32_t(self->state.tqPlatoon));
-            std::cout << "PLATOON: "<<self->state.tqPlatoon<<"\n";
-            self->delayed_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(50), increment_number_trucks_backwards_atom_v,uint32_t(self->state.tqPlatoon));
-            
-        },
+
         
         /*
          USE THIS ONE.
@@ -271,7 +278,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         [=](increment_number_trucks_atom){
             self->state.tqPlatoon+= 1;
             self->anon_send(caf::actor_cast<caf::actor>(self->state.client), update_truck_numbers_atom_v,self->state.tqPlatoon);
-            self->delayed_anon_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::seconds(1), update_truck_numbers_atom_v, self->state.tqPlatoon);
+            self->delayed_anon_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(10), update_truck_numbers_atom_v, self->state.tqPlatoon);
             std::cout << "PLATOON HERE: "<<self->state.tqPlatoon<<"\n";
         },
         
@@ -281,7 +288,16 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         
         [=](decrease_number_trucks_atom){
             self->state.tqPlatoon-=2;
-            std::cout << "PLATOON HERE: "<<self->state.tqPlatoon<<"\n";
+            std::cout << "[TRUCK]: Platoon after decreasing is : "<<self->state.tqPlatoon<<"\n";
+            
+        },
+        /*
+         DECREASES number of trucks by a certain amount
+        */
+        
+        [=](decrease_number_trucks_atom, truck_quantity quantity){
+            self->state.tqPlatoon-=quantity;
+            std::cout << "[TRUCK]: Platoon after decreasing by a certain amount is : "<<self->state.tqPlatoon<<"\n";
             
         },
         
@@ -291,7 +307,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         
         [=](update_truck_numbers_atom, uint32_t a ) {
             self->state.tqPlatoon = a;
-            std::cout << "PLATOON : " << self->state.tqPlatoon;
+            std::cout << "[TRUCK]: Platoon is now : " << self->state.tqPlatoon;
         },
         
         /*
@@ -303,17 +319,45 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
 //                place holder
                 std::cout << "Hey, that's it\n";
             }else{
+                
                 self->anon_send(caf::actor_cast<caf::actor>(self->state.server), cascade_port_host_atom_v, newPort, newHost, stopID);
             }
+        },
+        /*
+         Update the port and the host for the truck in front
+        */
+        
+        [=](update_port_host_previous_atom, uint16_t port, std::string host){
+            self->state.setPreviousHost(host);
+            self->state.setPreviousPort(port);
+//            std::cout << "PREVIOUS TRUCK:" << self->state.getPreviousPort() << " " << self->state.getPreviousHost() << std::endl ;
+        },
+
+        /*
+         Update the port and the host for the truck in front of the truck in front
+        */
+
+        [=](update_back_up_atom, uint16_t port, std::string host){
+            self->state.setBackUpHost(host);
+            self->state.setBackUpPort(port);
+            
+//            std::cout << "BACKUP TRUCK:" << self->state.getBackUpHost() << " " << self->state.getBackUpPort() << std::endl ;
+        },
+        
+        /*
+         truck in front left or dead
+        */
+        
+        [=](truck_left_or_dead_atom) {
+            auto im = self->home_system().middleman().spawn_client(TruckClient, self->state.getBackUpHost(), self->state.getBackUpPort(), self);
+            if(!im)
+                std::cerr << "failed to spawn "<< self->state.getName() << "'s client: " << to_string(im.error()) <<"\n"<< "\n\n"<< std::endl;
         },
     };
 }
 
 
-
 caf::behavior master(caf::stateful_actor<Truck>* self){
-    
-    
     return {
         [=](become_master_atom){
             std::cout << "[TRUCK]:I am the new master\n";
@@ -327,8 +371,10 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
 //            std::cout<< val << "New conn";
         },[=](assign_id_atom){
             return self->state.getId() - 1;
+            
         },[=](get_host_port_atom) {
             return std::make_pair(int32_t(self->state.getPort()),self->state.getHost());
+            
         },[=](update_id_behind_atom) {
             self->anon_send(caf::actor_cast<caf::actor>(self->state.server), update_id_behind_atom_v,uint32_t{self->state.getId()-uint32_t(1)});
         },[=](tell_back_im_master_atom) {
@@ -343,10 +389,19 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
             return self->state.tqPlatoon;
         },[=](increment_number_trucks_atom, uint32_t newPlatoon){
             self->state.tqPlatoon += newPlatoon;
-            std::cout << "PLATOON: "<<self->state.tqPlatoon<<"\n";
+            std::cout << "[TRUCK]: Platoon is now  : "<<self->state.tqPlatoon<<"\n";
         },[=](update_truck_numbers_atom, uint32_t a ) {
             self->state.tqPlatoon = a;
-            std::cout << "PLATOON : " << self->state.tqPlatoon;
+            std::cout << "[TRUCK]: Platoon is now  : " << self->state.tqPlatoon << "\n";
+        },
+        [=](get_port_atom) {
+            return self->state.getPort();
+        },
+        
+        [=](decrease_number_trucks_atom, truck_quantity quantity){
+            self->state.tqPlatoon-=quantity;
+            std::cout << "[TRUCK]: Platoon after decreasing by a certain amount is : "<<self->state.tqPlatoon<<"\n";
+            
         },
     };
 }
@@ -385,6 +440,20 @@ const char* Truck::getHostC(){
 bool Truck::isMasterConnection(){
     return bMasterConnection;
 }
+std::string Truck::getPreviousHost(){
+    return sPreviousTruckHost_;
+}
+uint16_t Truck::getPreviousPort(){
+    return uPreviousTruckPort;
+}
+std::string Truck::getBackUpHost(){
+    return sBackUpHost_;
+}
+uint16_t Truck::getBackUpPort(){
+    return uBackUpPort;
+}
+
+
 //
 //    Setters
 //
@@ -413,3 +482,19 @@ void Truck::setPort(uint16_t port){
 void Truck::setMasterConnection(bool res){
     bMasterConnection = res;
 }
+
+void Truck::setPreviousHost(std::string host){
+    sPreviousTruckHost_ = host;
+}
+
+
+void Truck::setPreviousPort(uint16_t port){
+    uPreviousTruckPort = port;
+}
+void Truck::setBackUpHost(std::string host){
+    sBackUpHost_ = host;
+}
+void Truck::setBackUpPort(uint16_t port){
+    uBackUpPort = port;
+}
+

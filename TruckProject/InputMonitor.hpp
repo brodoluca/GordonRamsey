@@ -44,15 +44,16 @@ inline caf::behavior InputMonitor(caf::stateful_actor<InputMonitorState>* self) 
                     uint32_t b =stoi(line);
                     self->send(caf::actor_cast<caf::actor>(self->current_sender()),b);
                 }else{
-                    self->quit();
+//                    self->quit();
                 }
             }
+        
             else if(ret == 0)
             {
                 std::cout << "Done:" << "\n";
-                self->quit();
+//                self->quit();
             }
-   
+
         }
     };
 }

@@ -36,6 +36,7 @@ CAF_ADD_ATOM(truck_block, cascade_port_host_atom)
 
 CAF_ADD_ATOM(truck_block, ask_for_input_atom)
 
+
 CAF_ADD_ATOM(truck_block, initialiaze_truck_platoon_atom)
 CAF_ADD_ATOM(truck_block, increment_number_trucks_upwards_atom)
 CAF_ADD_ATOM(truck_block, increment_number_trucks_backwards_atom)
@@ -45,7 +46,15 @@ CAF_ADD_ATOM(truck_block, get_truck_numbers_atom)
 CAF_ADD_ATOM(truck_block, update_truck_numbers_atom)
 CAF_ADD_ATOM(truck_block, spawn_server_atom);
 
+CAF_ADD_ATOM(truck_block, update_port_host_previous_atom);
+CAF_ADD_ATOM(truck_block, get_port_host_previous_atom);
+//CAF_ADD_ATOM(truck_block, get_port_atom);
+CAF_ADD_ATOM(truck_block, update_back_up_atom);
+CAF_ADD_ATOM(truck_block, get_port_host_back_up_atom);
 
+CAF_ADD_ATOM(truck_block, truck_left_or_dead_atom);
+
+CAF_ADD_ATOM(truck_block, fork_to_master_atom);
 CAF_ADD_TYPE_ID(truck_block, (std::pair<int32_t, std::string>) )
 
 CAF_END_TYPE_ID_BLOCK(truck_block)
@@ -54,5 +63,6 @@ template <class Inspector>
 bool inspect(Inspector& f, std::pair<int32_t, std::string>& x) {
     return f.object(x).fields(f.field("int32_t", x.first), f.field("string", x.second));
 }
+
 
 #endif /* atoms_h */

@@ -6,6 +6,7 @@
 //
 #include "Truck.hpp"
 
+
 caf::behavior TruckBehind(caf::io::broker *self, caf::io::connection_handle hdl,const caf::actor& buddy){
     self->monitor(buddy);
     self->set_down_handler([=](caf::down_msg& dm) {
@@ -13,16 +14,12 @@ caf::behavior TruckBehind(caf::io::broker *self, caf::io::connection_handle hdl,
             std::cout << "My Mate is down" << std::endl;
 //            self->quit(dm.reason);
         }
-        
-        
     });
-    self->link_to(buddy);
-    self->set_exit_handler([=](caf::exit_msg& ms){
-        if (ms.source == buddy) {
-            std::cout << "My Mate is dead" << std::endl;
-//            self->quit(ms.reason);
-        }
-    });
+//    self->request(buddy, std::chrono::seconds(2), get_port_atom_v).then([=](uint16_t new_port){
+//        auto a = self->add_tcp_doorman(new_port);
+//        });
+//    auto a = self->add_tcp_doorman(3232);
+    
     self->send(buddy, set_server_atom_v);
     self->send(buddy, increment_number_trucks_atom_v);
     self->configure_read(hdl, caf::io::receive_policy::at_least(sizeof(uint8_t)+sizeof(uint32_t)));
@@ -33,7 +30,7 @@ caf::behavior TruckBehind(caf::io::broker *self, caf::io::connection_handle hdl,
 //              self->send_exit(buddy, caf::exit_reason::remote_link_unreachable);
 //              self->quit(caf::exit_reason::remote_link_unreachable);
           }
-        
+    
         },[=](const caf::io::new_connection_msg& msg) {
             std::cout << "[SERVER]: New Connection_Accepted" << std::endl;
 //            write_int(self, hdl, static_cast<uint8_t>(operations::get_port_host));
@@ -42,17 +39,23 @@ caf::behavior TruckBehind(caf::io::broker *self, caf::io::connection_handle hdl,
           write_int(self, hdl, static_cast<uint8_t>(operations::update_number_trucks_from_client));
           write_int(self, hdl,static_cast<uint32_t>(q));
           self->flush(hdl);
+        
       },[=](send_new_command_atom, uint32_t command){
           std::cout<<"Started\n";
           write_int(self, hdl, static_cast<uint8_t>(operations::command));
           write_int(self, hdl, command);
           self->flush(hdl);
       },[=](become_master_atom){
+          
           std::cout<<"IM NEW MASTER\n";
-          self->fork(TruckServerMaster, hdl, std::move(buddy));
-          self->quit();
+        
+        
+          self->fork(TruckServerMaster,std::move(hdl), std::move(buddy));
+//          self->close(hdl);
+//          self->quit(caf::exit_reason::remote_link_unreachable);
+    
       },[=](update_truck_behind_port_host_atom, uint16_t p, std::string s){
-          std::cout<<"NO ONE TO SEND COMMANDS TO\n";
+          
       },[=](const caf::io::new_data_msg& msg) {
           auto rd_pos = msg.buf.data();
           auto op_val = uint8_t{0};
@@ -137,7 +140,48 @@ caf::behavior TruckBehind(caf::io::broker *self, caf::io::connection_handle hdl,
       },[=](cascade_port_host_atom, uint16_t newPort, std::string newHost, truck_quantity stopID){
           std::cout<<"HEY, I need to send back\n";
           
+      },[=](update_port_host_previous_atom){
+          std::string Host = "localhost";
+          char temp[20] = {'\0'};
+          uint32_t message = 0;
+          self->request(buddy, std::chrono::seconds(1), get_host_port_atom_v).then([&](std::pair<int32_t, std::string> pPortHost) mutable {
+              Host = pPortHost.second;
+              message = pPortHost.first;
+//              std::cout << Host << message;
+              uint16_t length = Host.length();
+              while(Host.length()<15) Host.append("-");
+              Host.append("064");
+              length = Host.length();
+              message |= length<<16;
+              std::strcpy(temp, Host.c_str());
+              write_int(self, hdl, static_cast<uint8_t>(operations::update_port_host_previous));
+              write_int(self, hdl, message);
+              self->write(hdl, sizeof(char)*(length), temp);
+              self->flush(hdl);
+          });
       },
+    
+        [=](update_back_up_atom){
+            std::string Host = "localhost";
+            char temp[20] = {'\0'};
+            uint32_t message = 4242;
+            self->request(buddy, std::chrono::seconds(1),get_port_host_previous_atom_v ).then([&](std::pair<int32_t, std::string> pPortHost) mutable {
+                Host = pPortHost.second;
+                message = pPortHost.first;
+//                std::cout << Host << message;
+                uint16_t length = Host.length();
+                while(Host.length()<15) Host.append("-");
+                Host.append("064");
+                length = Host.length();
+                message |= length<<16;
+                std::strcpy(temp, Host.c_str());
+                write_int(self, hdl, static_cast<uint8_t>(operations::update_port_host_back_up));
+                write_int(self, hdl, message);
+                self->write(hdl, sizeof(char)*(length), temp);
+                self->flush(hdl);
+                    
+            });
+        },
     };
 };
 
@@ -159,21 +203,24 @@ caf::behavior temp_server(caf::io::broker *self,const caf::actor& buddy){
                 std::cout << "[SERVER]: New Connection_Accepted" << std::endl;
                 auto impl = self->fork(TruckBehind, msg.handle,buddy);
                 self->send(impl, send_server_atom_v);
-                self->quit(caf::sec::invalid_argument);
+                self->delayed_send(impl, std::chrono::milliseconds(10),update_port_host_previous_atom_v);
+                self->delayed_send(impl, std::chrono::milliseconds(20), update_back_up_atom_v);
+                self->quit();
             }else{
                 std::cout << "[SERVER]: Connection_refused : too many trucks" << std::endl;
                 self->close(msg.handle);
             }
         },[=](send_new_command_atom, uint32_t command){
-          std::cout<<"NO ONE TO SEND COMMANDS TO\n";
+//          std::cout<<"NO ONE TO SEND COMMANDS TO\n";
         },[=](become_master_atom){
             self->become(temp_master_server(self, buddy));
         },
+        
         [=](tell_back_im_master_atom){
-          std::cout<<"NO ONE TO SEND COMMANDS TO\n";
+//          std::cout<<"NO ONE TO SEND COMMANDS TO\n";
         },
         [=](update_truck_behind_port_host_atom, uint16_t p, std::string s){
-          std::cout<<"NO ONE TO SEND COMMANDS TO\n";
+//          std::cout<<"NO ONE TO SEND COMMANDS TO\n";
         },
 //        caf::others >> [=](const caf::message &m) -> caf::skippable_result {
 //            aout(self) << "[SERVER]: Unexpected message "<< std::endl;
@@ -182,6 +229,5 @@ caf::behavior temp_server(caf::io::broker *self,const caf::actor& buddy){
 //
     };
 }
-
 
 

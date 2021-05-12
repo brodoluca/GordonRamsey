@@ -38,6 +38,7 @@ public:
     std::string getHost();
     float getSpeed();
     
+    
     void setMasterConnection(bool res);
     void setName(std::string name);
     void setId(int32_t id);
@@ -46,14 +47,24 @@ public:
     void setPort(uint16_t port);
     void setHost(std::string host);
     
+    void setPreviousHost(std::string host);
+    void setPreviousPort(uint16_t port);
+    std::string getPreviousHost();
+    uint16_t getPreviousPort();
     
+    std::string getBackUpHost();
+    uint16_t getBackUpPort();
+    
+    void setBackUpHost(std::string host);
+    void setBackUpPort(uint16_t port);
+
 private:
     
     std::string sName_ = "Name";
     int32_t iId_;
     int32_t iFrontId_;
     float fSpeed;
-    uint16_t uPort = 4242;
+    uint16_t uPort;
     std::string sHost = "localhost";
     uint16_t uPreviousTruckPort = 0;
     std::string sPreviousTruckHost_ = "";
@@ -63,7 +74,7 @@ private:
     
 };
 
-caf::actor spawnNewTruck(caf::actor_system& system, std::string name, std::string host, uint16_t port);
+caf::actor spawnNewTruck(caf::actor_system& system, std::string name, std::string host, uint16_t port, uint16_t own_port);
 caf::actor spawnNewMaster(caf::actor_system& system,std::string name, std::string host , uint16_t port);
 
 
@@ -77,7 +88,6 @@ caf::behavior TruckBehind(caf::io::broker *self, caf::io::connection_handle hdl,
 caf::behavior temp_server(caf::io::broker *self,const caf::actor& buddy);
 
 caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl, const caf::actor& buddy);
-
 
 
 #endif /* Truck_hpp */

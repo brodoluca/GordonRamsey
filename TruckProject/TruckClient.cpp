@@ -8,11 +8,9 @@
 
 
 caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl, const caf::actor& buddy){
-   
-    
-    assert(self->num_connections() == 1); //sanity check, we only want one connection at the time.  s
-    
+//    assert(self->num_connections() == 1); //sanity check, we only want one connection at the time.  s
     /*
+
         If my buddy is down, im gonna die as well
      */
     
@@ -24,10 +22,11 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
             self->quit(dm.reason);
         }
     });
-    
+//    auto b = self->add_tcp_scribe("localhost", 4242);
     /*
      How much im gonna read
      */
+    
     self->configure_read(hdl, caf::io::receive_policy::at_most(sizeof(uint8_t)+sizeof(uint32_t)+sizeof(char)*21));
     return {
         /*
@@ -35,23 +34,36 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
             In case is true, it becomes the new master
             IN case is false, nothing happens for now
          */
+
         [=](const caf::io::connection_closed_msg& msg){
           if (msg.handle == hdl) {
-                std::cout << "[TRUCK]:Connection closed" << std::endl;
+//                std::cout << "[TRUCK]:Connection closed" << std::endl;
                 self->request(buddy, std::chrono::seconds(2), is_master_atom_v).then(
                 [=](bool res){
                         if(res){
                             std::cout << "[TRUCK]: Connection to master closed" << std::endl;
+                    
+                            
                             self->send(buddy, decrease_number_trucks_atom_v);
                             self->send(buddy, become_master_atom_v);
                             self->quit(caf::exit_reason::remote_link_unreachable);
                         }else{
+//                            self->request(buddy, std::chrono::seconds(1), get_port_host_back_up_atom_v).await([=](std::pair<int32_t, std::string> pHostPort) {
+//                                auto i = self->home_system().middleman().spawn_client(TruckClient, pHostPort.second, uint16_t(pHostPort.first), std::move(buddy));
+//                                self->quit();
+//                            });
+    
+                            std::cout << "[TRUCK]: Connection to truck in front closed" << std::endl;
+                            self->delayed_send(buddy, std::chrono::milliseconds(10),truck_left_or_dead_atom_v);
+                           
 //                            self->send_exit(buddy, caf::exit_reason::remote_link_unreachable);
 //                            self->quit(caf::exit_reason::remote_link_unreachable);
                         }
+                    
                 });
           }
         },
+    
         /*
             Ask if it's a master connection
         */
@@ -102,8 +114,9 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
         /*
             Interprets  new messages
         */
-        
-        [=](const caf::io::new_data_msg& msg) {
+
+        [=, &hdl](const caf::io::new_data_msg& msg) {
+            hdl = msg.handle;
         ReadingBuf:
             auto rd_pos = msg.buf.data();
             // Read the operation value as uint8_t from the buffer.
@@ -112,7 +125,7 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
             ++rd_pos;
             auto val = uint32_t{0};
             read_int(rd_pos, val);
-            
+    
 //            This is insanely ugly. But gets things done.
             uint32_t temp_length = val & 0b11111111111111110000000000000000; //Masks the first half of the number
             uint16_t temp = temp_length>>16; //Shifts it to the first two bits, so we get a nice number
@@ -140,6 +153,7 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
                     /*
                         Check if it's a master connection
                     */
+                    
                 case operations::master:
                     self->anon_send(buddy, set_master_connection_atom_v, bool(val));
                     std::cout << "[CLIENT] :master connection : "  << bool(val) << "\n";
@@ -199,10 +213,41 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
                     break;
                     
                     /*
-                        I send back port and host i received
+                        This updates the port and the host for the truck in front of me. Basically, I save the data of the truck in front. 
                     */
                     
-                case operations::cascade_port_host:
+                case operations::update_port_host_previous:
+//                    copy the buffer into a char buffer.
+                    while (strlen(cstr) < temp+3) {
+                        memcpy(&cstr, ++rd_pos, sizeof(char)*(temp+3));
+                    }
+                
+//                    convert it to a c++ string
+                    ip = cstr;
+//                    set the memory of the copy buffer to 0
+                    memset(cstr, '0', sizeof(cstr));
+//                    remove the first 3 chars of the string (There is always some garbage in the buffer)
+                    ip.erase(ip.begin(), ip.begin()+3);
+//                    save the 3 char at the end of the string (that's where we save the stop ID)
+                    cstr[21] = ip.back();
+                    ip.pop_back();
+                    cstr[20] = ip.back();
+                    ip.pop_back();
+                    cstr[19] = ip.back();
+                    ip.pop_back();
+//                    convert it to an in
+                    tqStopId =atoi(cstr);
+//                    remove the '-' char from the string (place holders)
+                    while(ip.back() == '-') ip.pop_back();
+//                    prints it for pure convenience
+                    self->send(buddy, update_port_host_previous_atom_v, temp_port, ip );
+//                    std::cout << "ID:"<< tqStopId << "  PORT: "<<temp_port << "  LENGTH : "<<temp << "  "<<ip;
+                    break;
+                    
+            
+                    
+                    
+                case operations::update_port_host_back_up:
 //                    copy the buffer into a char buffer.
                     while (strlen(cstr) < temp+3) {
                         memcpy(&cstr, ++rd_pos, sizeof(char)*(temp+3));
@@ -224,9 +269,11 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
                     tqStopId =atoi(cstr);
 //                    remove the '-' char from the string (place holders)
                     while(ip.back() == '-') ip.pop_back();
-//                    prints it for pure convenience 
-                    std::cout << "ID:"<< tqStopId << "  PORT: "<<temp_port << "  LENGTH : "<<temp << "  "<<ip;
+//                    prints it for pure convenience
+                    self->send(buddy, update_back_up_atom_v, temp_port, ip );
+//                    std::cout << "ID:"<< tqStopId << "  PORT: "<<temp_port << "  LENGTH : "<<temp << "  "<<ip;
                     break;
+                    
                     /*
                        I create a new truck platoon
                     */
@@ -234,11 +281,13 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
                     self->send(buddy, increment_number_trucks_atom_v, uint32_t(val));
                     break;
                     /*
+
                         I update the truck platoon
                     */
                 case operations::update_number_trucks_from_client:
                     self->send(buddy, update_truck_numbers_atom_v,val);
                     break;
+
                     /*
                         I update the truck platoon
                     */
@@ -246,17 +295,13 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
                     self->send(buddy, update_truck_numbers_atom_v,val);
                     break;
               default:
-                std::cout << "[TRUCK] : Invalid value for op_val, stop" << std::endl;
+                std::cout << "[CLIENT] : Invalid value for op_val, stop" << std::endl;
 //                    self->quit(caf::sec::invalid_argument);
                     break;
             };
         }
-        
     };
 }
-
-
-
 //                case operations::update_truck_behind:
 //                    while (strlen(cstr) < 15) {
 //                        memcpy(&cstr, ++rd_pos,sizeof(char)*17);
@@ -264,4 +309,3 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
 //                    self->home_system().middleman().spawn_client(TruckClient, cstr, uint16_t(val), buddy);
 //                    self->quit();
 //                    break;
-

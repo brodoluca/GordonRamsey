@@ -11,7 +11,7 @@
 #define MAX_TRUCKS 64
 #define MAX_TRUCK 64
 
+#define SERVER_PORT 3232
 using truck_quantity = int32_t;
-
 
 #endif /* defines_h */
