@@ -1,13 +1,7 @@
-//
-//  TruckServer.cpp
-//  Truck2
-//
-//  Created by Luca on 02/05/21.
-//
 
 
 #include "Truck.hpp"
-
+//TO DO
 /*------------------------------------------------------------------------------------------------
 //Create a different brokers to handle more connections
  This proker needs to be special, it only sends the commands coming from the main broker
@@ -16,6 +10,7 @@
 //After that create a behavior of the main broker that sends the required messages to the  other brokers
 ---------------------------------------------------------------------------------------------------*/
 
+///This file includes the behavior of the master.
 
 
 caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handle hdl, const caf::actor& buddy){
@@ -62,7 +57,7 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
         ///initializes the truck platoon and adds one to ir
         ///it also sends to the truck connected the new platoon size
             [=](initialiaze_truck_platoon_atom){
-                self->send(buddy, increment_number_trucks_atom_v, uint32_t(1));
+//                self->send(buddy, increment_number_trucks_atom_v, uint32_t(1));
                 self->request(buddy, std::chrono::seconds(1), get_truck_numbers_atom_v).then([=](truck_quantity a ){
                     write_int(self, hdl, static_cast<uint8_t>(operations::update_number_trucks));
                     write_int(self, hdl, uint32_t(a));
@@ -91,66 +86,49 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
                     self->write(hdl, sizeof(char)*(length), temp);
                     self->flush(hdl);
                 });
-                
+    
             },
         ///Handler for a "connection_closed_msg" (when the connection is closed)
         ///resizies the platoon as well
-            
-//            TODO - Update the platoon
-        
             [=](const caf::io::connection_closed_msg& msg) {
                 std::cout << "[MASTER]: Connection closed" << std::endl;
                 self->send(buddy, decrease_number_trucks_atom_v, truck_quantity(1));
                 self->request(buddy, std::chrono::milliseconds(500), get_port_atom_v).then(
                     [=](uint16_t truckPort){auto a = self->add_tcp_doorman(truckPort);});
             },
-//
-//            },[=](update_id_behind_atom, uint32_t newId){
-//                std::cout<<"Upsate Id\n";
-//                write_int(self, hdl, static_cast<uint8_t>(operations::get_id));
-//                write_int(self, hdl, newId);
-//                self->flush(hdl);
-//            },
-        
         ///Use this part to send commands to the platoon
         ///The fifth command is used for testing
             [=](uint32_t a) {
-                std::string Host = "localhost";
-                char temp[20] = {'\0'};
-                uint16_t length = Host.length();
-                uint32_t message = 4242;
+                write_int(self, hdl, static_cast<uint8_t>(operations::command));
                 switch (a) {
                     case 1:
-                        write_int(self, hdl, static_cast<uint8_t>(operations::command));
+                        
                         write_int(self, hdl, static_cast<uint32_t>(commands::stop));
                         break;
                     case 2:
-                        write_int(self, hdl, static_cast<uint8_t>(operations::command));
+                        
                         write_int(self, hdl, static_cast<uint32_t>(commands::accellerate));
                         break;
                     case 3:
-                        write_int(self, hdl, static_cast<uint8_t>(operations::command));
+                       
                         write_int(self, hdl, static_cast<uint32_t>(commands::decellerate));
                         break;
                     case 4:
-                        write_int(self, hdl, static_cast<uint8_t>(operations::command));
+                       
                         write_int(self, hdl, static_cast<uint32_t>(commands::start));
                         break;
-                    case 5:
-                        while(Host.length()<15) Host.append("-");
-                        Host.append("064");
-                        length = Host.length();
-                        message |= length<<16;
-                        std::strcpy(temp, Host.c_str());
-                        write_int(self, hdl, static_cast<uint8_t>(operations::update_port_host_previous));
-                        write_int(self, hdl, message);
-                        self->write(hdl, sizeof(char)*(length), temp);
-                        break;
+                    
                     default:
                         break;
                 }
                 self->flush(hdl);
             },
+        
+            ///Leave it here,master should not use this to update the quantity,
+            ///however, needed otherwirse the program crushes
+            [=](update_truck_numbers_atom, truck_quantity q) {
+          
+          },
         ///Handler for a new message.
         ///Switch cases decides what to do
             [=](const caf::io::new_data_msg& msg) mutable {
@@ -195,16 +173,15 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
                 ///(We basically allow reconnections)
                 /// If not, we for to an external one and we store the actor
                 
-            [=, &hdl](const caf::io::new_connection_msg& msg) {
+            [=](const caf::io::new_connection_msg& msg) {
                 std::cout << "[MASTER]: New Connection_Accepted" << std::endl;
-                     
-//                SHOULD BE <=1
-                if (self->num_connections() ==4 ) {
+
+                if (self->num_connections() <=1 ) {
                     self->fork(TruckServerMaster, msg.handle, std::move(buddy));
                     std::cout << "[MASTER]: Im gonna die and fork to a new broker. Connections: "<<self->num_connections() << std::endl;
                     self->quit(caf::sec::feature_disabled);
-                    
                 }else{
+                    ///This is the WIP part, not very useful atm
                     auto a = self->fork(TruckMasterMultiplexer, msg.handle, buddy);
                     self->send(buddy, add_connection_atom_v, a);
         
@@ -221,17 +198,24 @@ caf::behavior temp_master_server(caf::io::broker* self, const caf::actor& buddy)
   return {
       ///The temp server forks to the main one and dies afterwards
     [=](const caf::io::new_connection_msg& msg) {
-      std::cout << "[TEMP_SERVER]: New Connection_Accepted" << std::endl;
-      auto impl = self->fork(TruckServerMaster, msg.handle, std::move(buddy));
+        std::cout << "[TEMP_SERVER]: New Connection_Accepted" << std::endl;
+        auto impl = self->fork(TruckServerMaster, msg.handle, std::move(buddy));
+        self->quit();
+        self->send(buddy, increment_number_trucks_atom_v, uint32_t(1));
+        },
+      [=](fork_to_master_atom, caf::io::connection_handle hdl){
+      auto impl = self->fork(TruckServerMaster,hdl, std::move(buddy));
       self->quit();
-        
-        ///I don't think these are actually being caleld, but they are here so the program doesnt crash
-    },[=](tell_back_im_master_atom){
+    },
+      ///I don't think these are actually being caleld, but they are here so the program doesnt crash
+      ///Basically, there is a distinction between server with a client conencted and server with no client connected
+      ///We dont do shit if we dont have a client e we leave it that way.
+      
+      [=](tell_back_im_master_atom){
     },[=](update_truck_behind_port_host_atom, uint16_t p, std::string s){
     },[=](ask_for_input_atom){
-    },[=](fork_to_master_atom, caf::io::connection_handle hdl){
-        auto impl = self->fork(TruckServerMaster,hdl, std::move(buddy));
-        self->quit();
+    },
+      [=](update_truck_numbers_atom, truck_quantity q) {
     },
       
   };

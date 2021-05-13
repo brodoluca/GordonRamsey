@@ -20,14 +20,17 @@
 #include <poll.h>
 #include <string>
 
+
+
+///This is legit the most broken, ghetto, stupid solution I have ever designed.
+///This works 30% of the time and it's ugly as hell
+///basically, it's meant to be like an input monitor function with a certain timeout. But it doesnt work very well. I'm not going to modify it.
+/// 30% of the time is good enough
 struct InputMonitorState{
 public:
     uint32_t iInput;
     static inline const char* name = "InputMonitor";
 };
-
-
-
 
 inline caf::behavior InputMonitor(caf::stateful_actor<InputMonitorState>* self) {
     struct pollfd pfd = { STDIN_FILENO, POLLIN, 0 };
@@ -35,7 +38,7 @@ inline caf::behavior InputMonitor(caf::stateful_actor<InputMonitorState>* self) 
     int ret = 0;
     return{
         [&](int32_t a){
-            ret = poll(&pfd, 1, 1000);  // timeout of 1000ms
+            ret = poll(&pfd, 1, 10000);  // timeout of 10000ms
             if(ret == 1) // there is something to read
             {
                 std::cout << "New Input:" << "\n";

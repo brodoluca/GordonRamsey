@@ -1,12 +1,12 @@
-//
-//  atoms.h
-//  Truck2
-//
-//  Created by Luca on 10/05/21.
-//
 
 #ifndef atoms_h
 #define atoms_h
+
+///These atoms are used to decide the behaviors of the various entity.
+///Keep in mind most of them are USELESS, but I want to keep them here
+///THese are empty structs, should not be a big overhead.
+///Also, im too lazy to go and check which is usefull and which is not
+
 
 CAF_BEGIN_TYPE_ID_BLOCK(truck_block, first_custom_type_id)
 CAF_ADD_ATOM(truck_block, initialize_atom)
@@ -33,10 +33,8 @@ CAF_ADD_ATOM(truck_block, tell_back_im_master_atom)
 CAF_ADD_ATOM(truck_block, update_truck_behind_port_host_atom)
 CAF_ADD_ATOM(truck_block, update_master_atom)
 CAF_ADD_ATOM(truck_block, cascade_port_host_atom)
-
 CAF_ADD_ATOM(truck_block, ask_for_input_atom)
-
-
+CAF_ADD_ATOM(truck_block, update_id_cascade)
 CAF_ADD_ATOM(truck_block, initialiaze_truck_platoon_atom)
 CAF_ADD_ATOM(truck_block, increment_number_trucks_upwards_atom)
 CAF_ADD_ATOM(truck_block, increment_number_trucks_backwards_atom)
@@ -45,20 +43,19 @@ CAF_ADD_ATOM(truck_block, decrease_number_trucks_atom)
 CAF_ADD_ATOM(truck_block, get_truck_numbers_atom)
 CAF_ADD_ATOM(truck_block, update_truck_numbers_atom)
 CAF_ADD_ATOM(truck_block, spawn_server_atom);
-
 CAF_ADD_ATOM(truck_block, update_port_host_previous_atom);
 CAF_ADD_ATOM(truck_block, get_port_host_previous_atom);
-//CAF_ADD_ATOM(truck_block, get_port_atom);
 CAF_ADD_ATOM(truck_block, update_back_up_atom);
 CAF_ADD_ATOM(truck_block, get_port_host_back_up_atom);
-
 CAF_ADD_ATOM(truck_block, truck_left_or_dead_atom);
-
 CAF_ADD_ATOM(truck_block, fork_to_master_atom);
-
 CAF_ADD_ATOM(truck_block, add_connection_atom);
-
-
+CAF_ADD_ATOM(truck_block, request_for_port_host_atom);
+CAF_ADD_ATOM(truck_block, close_connection_atom);
+CAF_ADD_ATOM(truck_block, close_client_connection_atom);
+CAF_ADD_ATOM(truck_block, allow_switcheroo_atom);
+CAF_ADD_ATOM(truck_block, create_new_client_connection_previous_hostport_atom)
+CAF_ADD_ATOM(truck_block, somebody_connected_atom);
 CAF_ADD_TYPE_ID(truck_block, (std::pair<int32_t, std::string>) )
 
 CAF_END_TYPE_ID_BLOCK(truck_block)

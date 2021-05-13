@@ -1,11 +1,8 @@
-//
-//  TruckClient.cpp
-//  Truck2
-//
-//  Created by Luca on 02/05/21.
-//
+
 #include "Truck.hpp"
 
+///This file contains the implementation of the client.
+///This behavior encapsulates a broker that handles the connection to a server, namely the truck in front.
 
 caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl, const caf::actor& buddy){
     ///monitors the buddy and when it's down, we quit
@@ -35,15 +32,31 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
                         }else{
                             std::cout << "[TRUCK]: Connection to truck in front closed" << std::endl;
                             self->delayed_send(buddy, std::chrono::milliseconds(10),truck_left_or_dead_atom_v);
+//                            self->quit(caf::exit_reason::remote_link_unreachable);
                         }
                 });
           }
         },
+        
+        
+        ///Close  the connection with the handle and dies, no response.
+        [=](close_connection_atom) {
+            std::cout << "[Client]:Connection closed.";
+            self->close(hdl);
+            self->quit();
+        },
     
+
         ///asks if it's a master connection
         [=](is_master_atom) {
             write_int(self, hdl, static_cast<uint8_t>(operations::master));
             write_int(self, hdl, static_cast<uint32_t>(2));
+            self->flush(hdl);
+        },
+        ///updates the number of trucks by a certain amount
+        [=](increment_number_trucks_upwards_atom, truck_quantity newTrucks) {
+            write_int(self, hdl, static_cast<uint8_t>(operations::update_number_trucks));
+            write_int(self, hdl, static_cast<uint32_t>(newTrucks));
             self->flush(hdl);
         },
         
@@ -84,11 +97,10 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
             char cstr[22] = {'\0'}; //initialize translation buffer
             std::string ip; //declare conversion string
             auto tqStopId = uint32_t{0}; //declare variable in which we save the Stop ID (ID at which we stop)
-            
-            
             switch (static_cast<operations>(op_val)) {
                     ///Assigns new front id
                     ///this is useless
+                
                 case operations::front_id:
                     self->send(buddy, set_front_id_v, int32_t(val));
                     break;
@@ -98,14 +110,13 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
                     self->send(buddy, get_new_id_atom_v, int32_t(val));
                     break;
                     ///Receives whether is a master connection or not
-                    
                 case operations::master:
                     self->anon_send(buddy, set_master_connection_atom_v, bool(val));
                     std::cout << "[CLIENT] :master connection : "  << bool(val) << "\n";
                     break;
                     ///Updates the id from a non master connection
                 case operations::update_id_behind:
-                    self->send(buddy, update_id_behind_atom_v);
+//                     self->send(buddy, update_id_behind_atom_v);
                     break;
                     ///Sends the command to the truck
                 case operations::command:
@@ -200,6 +211,39 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
                     ///Updates the platoon size
                 case operations::update_number_trucks:
                     self->send(buddy, update_truck_numbers_atom_v,val);
+                    break;
+                    
+                
+                    ///Request for my own port and hsot
+                case operations::request_for_host_port:
+                    std::cout << "YES, yes you can"<<std::endl;
+                    self->request(buddy, std::chrono::seconds(1), get_host_port_atom_v).then([=](std::pair<int32_t, std::string> pPortHost) mutable {
+                        std::string Host = "ciao";
+                        char temp[20] = {'\0'};
+                        uint32_t message = 0;
+                        Host = pPortHost.second;
+                        message = pPortHost.first;
+                        uint16_t length = Host.length();
+                        while(Host.length()<15) Host.append("-");
+                        Host.append("064");
+                        length = Host.length();
+                        message |= length<<16;
+                        std::strcpy(temp, Host.c_str());
+                        write_int(self, hdl, static_cast<uint8_t>(operations::request_for_host_port));
+                        write_int(self, hdl, message);
+                        self->write(hdl, sizeof(char)*(length), temp);
+                        self->flush(hdl);
+                    });
+                    break;
+                    
+                    ///Closes the connection and creates a new one
+                    ///USES PREVIOUS PORT HOST BY DEFAULT
+                case operations::connect_new_server:
+                    //Now done through "get_port_host"
+                    std::cout << "[Client]:Connection closed from operations";
+                    self->close(hdl);
+                    self->send(buddy, create_new_client_connection_previous_hostport_atom_v);
+                    self->quit(caf::sec::connection_closed);
                     break;
               default:
                 std::cout << "[CLIENT] : Invalid value for op_val, stop" << std::endl;

@@ -1,11 +1,15 @@
-//
-//  TruckMultiplexer.cpp
-//  Truck2
-//
-//  Created by Luca on 12/05/21.
-//
 
 #include "Truck.hpp"
+
+///WIP of a new way of thinking at the platoon
+///instead of using linked-lists as a base data structure,  a tree might be more flexible
+///However, the three presents more challanges
+///First of all, we need to have brokers that take care of each connections with each truck (which is already been taken care of, more or less, by saving them in a vectr)
+///Second of all, Let's say truck A is the master and 4 trucks, namely B, C, D, E, are connected to it
+///and truck A dies, how do we decide which one becomes the master? (one solution might be selection algorithms).
+///Moreover,  what happens to the trucks which are not chosen to be the master?
+///We can store the ip address of the truck behind and tell them to connect to it. However, we also need to modify how the TruckServer handles new connections.
+///This can be done later once the main features are terminated. 
 
 
 caf::behavior TruckMasterMultiplexer(caf::io::broker *self, caf::io::connection_handle hdl, const caf::actor& buddy){
@@ -46,7 +50,6 @@ caf::behavior TruckMasterMultiplexer(caf::io::broker *self, caf::io::connection_
         ///requests the port and host from the truck (its own port and host) and
         ///sends them to the truck at the back, so that it can save them
         ///as previous host and previous port
-        
         [=](update_port_host_previous_atom){
             std::string Host = "ciao";
             char temp[20] = {'\0'};
@@ -66,8 +69,12 @@ caf::behavior TruckMasterMultiplexer(caf::io::broker *self, caf::io::connection_
                 self->flush(hdl);
             });
         },
+        ///Message received by the main behavior.
+        ///This is not supposed to happen here, so we keep it empty
+
         [=](ask_for_input_atom){
         },
+        
         [=](const caf::io::new_data_msg& msg) mutable {
 //                hdl = msg.handle;
             auto rd_pos = msg.buf.data();

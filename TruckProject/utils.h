@@ -1,9 +1,4 @@
-//
-//  utils.h
-//  TruckProject
-//
-//  Created by Luca on 22/04/21.
-//
+
 
 #ifndef utils_h
 #define utils_h
@@ -12,7 +7,11 @@
 #include "enums.h"
 #include "defines.h"
 
+///This file includes all the atoms, enums and definitions
+///also some commodity functions
 
+
+///this template function is used to write int safely into the netoek
 template <class T>
 void write_int(caf::io::broker* self, caf::io::connection_handle hdl, T value) {
   using unsigned_type = typename std::make_unsigned<T>::type;
@@ -25,7 +24,7 @@ void write_int(caf::io::broker* self, caf::io::connection_handle hdl, T value) {
 }
 
 
-// Utility function for reading an integer from incoming data.
+/// Utility function for reading an integer from incoming data.
 template <class T>
 void read_int(const void* data, T& storage) {
   using unsigned_type = typename std::make_unsigned<T>::type;
@@ -35,13 +34,14 @@ void read_int(const void* data, T& storage) {
 }
 
 
-// Utility function to print an exit message with custom name.
+/// Utility function to print an exit message with custom name.
 inline void print_on_exit(const caf::actor& hdl, const std::string& name) {
     hdl->attach_functor([=](const caf::error& reason) {
         std::cout << "["<< name << "]" <<" exited: " << to_string(reason) << std::endl;
   });
 }
 
+///config used at the beginning, but we dont use this anymore
 class config : public caf::actor_system_config {
 public:
   uint16_t port = 4242;

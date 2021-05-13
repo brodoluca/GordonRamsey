@@ -6,7 +6,6 @@
 //
 #include "Truck.hpp"
 
-
 caf::behavior TruckBehind(caf::io::broker *self, caf::io::connection_handle hdl,const caf::actor& buddy){
     ///monitors the buddy and when it's down, we quit
     self->monitor(buddy);
@@ -29,12 +28,10 @@ caf::behavior TruckBehind(caf::io::broker *self, caf::io::connection_handle hdl,
         [=](const caf::io::connection_closed_msg& msg) {
           if (msg.handle == hdl) {
             std::cout << "[SERVER]: Connection closed" << std::endl;
-
           }
             ///This is gonna get changed
         },[=](const caf::io::new_connection_msg& msg) {
             std::cout << "[SERVER]: New Connection_Accepted" << std::endl;
-
             ///Updates the size of the platoon of the truck behind
       },[=](update_truck_numbers_atom, truck_quantity q) {
           write_int(self, hdl, static_cast<uint8_t>(operations::update_number_trucks_from_client));
@@ -52,6 +49,8 @@ caf::behavior TruckBehind(caf::io::broker *self, caf::io::connection_handle hdl,
 //      },[=](update_truck_behind_port_host_atom, uint16_t p, std::string s){
 //
 //      },
+        
+        
         ///Handler for a new message.
         ///Switch cases decides what to do
         
@@ -150,8 +149,8 @@ caf::behavior TruckBehind(caf::io::broker *self, caf::io::connection_handle hdl,
 //This actor will die as soon as a connection is created.
 caf::behavior temp_server(caf::io::broker *self,const caf::actor& buddy){
     std::cout << "[SERVER]: SPAWNED" << std::endl;
-  
     return{
+    
         ///Handler a new connection
         ///If the platoon size is less than a certain size, all good
         ///otherwise we close the connection
@@ -161,6 +160,7 @@ caf::behavior temp_server(caf::io::broker *self,const caf::actor& buddy){
                 [&](truck_quantity tqNumberTrucks) mutable {
                     number_trucks = tqNumberTrucks;
             });
+        
             if(number_trucks<=MAX_TRUCKS){
                 std::cout << "[SERVER]: New Connection_Accepted" << std::endl;
                 auto impl = self->fork(TruckBehind, msg.handle,buddy);
@@ -173,7 +173,7 @@ caf::behavior temp_server(caf::io::broker *self,const caf::actor& buddy){
                 self->close(msg.handle);
             }
         },
-        
+    
         ///Those are insanely useful. They save the program from  exploding
         ///These basically handles some messages that happen when this truck becomes the master.
         /// Without those the program will die. Dont erase them

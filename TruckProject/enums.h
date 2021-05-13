@@ -8,6 +8,9 @@
 #ifndef enums_h
 #define enums_h
 
+
+///This enums class is used to differentiato operations when two brokers are connected to each other
+///basically, you can think at them like you would with atoms
 enum class operations : uint8_t {
     master = 5,
     assign_id,
@@ -24,14 +27,17 @@ enum class operations : uint8_t {
     try_luca,
     update_number_trucks_from_client,
     update_port_host_previous,
-    update_port_host_back_up
+    update_port_host_back_up,
+    request_for_host_port,
+    connect_new_server
 };
-
+///These are the commands a truck can interprates. 
 enum class commands : uint32_t{
     stop,
     accellerate,
     decellerate,
     start
 };
+
 
 #endif /* enums_h */
