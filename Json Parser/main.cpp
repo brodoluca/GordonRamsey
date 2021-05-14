@@ -33,8 +33,78 @@ int main(int argc, const char * argv[]) {
     if (JsonTrue == "true") {
         std::cout << "From String true passed!\n";
     }
-    if (JsonFalse == "false") {
+    if ((JsonFalse == "false")==false) {
         std::cout << "From String false passed!\n";
+    }
+    
+    std::cout << "\n";
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    
+    const auto JsonCString = Json::Json::FromString("\"Hello World!\"");
+    if (JsonCString == "Hello World!" ) {
+        std::cout << "From String to C string passed!\n";
+    }
+
+    
+    Json::Json d("Hello World!");
+    if ("\"Hello World!\"" == d.toString()) {
+        std::cout << "To C String from string passed!\n";
+    }
+    
+    
+    const auto JsonCppString = Json::Json::FromString(std::string("\"Hello World!\""));
+    if (JsonCppString == std::string("Hello World!") ) {
+        std::cout << "From String to C++ string passed!\n";
+    }
+    
+    Json::Json e(std::string("Hello World!"));
+    if ("\"Hello World!\"" == e.toString()) {
+        std::cout << "To C++ String from c++ string passed!\n";
+    }
+    
+    
+    std::cout << "\n";
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    Json::Json f(std::string("Needs to be escaped, \", \\, \b, \f,\n,\r,\t "));
+    if ("\"Needs to be escaped, \\\", \\\\, \\\b, \\\f,\\\n,\\\r,\\\t \"" == f.toString()) {
+        std::cout << "Properly escaped string passed\n";
+    }
+    const auto JsonUnEscapedString = Json::Json::FromString(std::string("\"Needs to be unescaped,\\\", \\\\,\\\b,\\\f,\\\n,\\\r,\\\t \""));
+    if (JsonUnEscapedString == std::string("Needs to be unescaped,\", \\,\b,\f,\n,\r,\t ") ) {
+        std::cout << "Properly unescaped string passed\n";
+    }
+    std::cout << "\n";
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    
+    Json::Json g(nullptr);
+    if ((bool)g == false) {
+        std::cout << "Bool down cast wrong value passed\n";
+    }
+    Json::Json h(false);
+    if ((bool)h == false) {
+        std::cout << "Bool down cast false passed\n";
+    }
+    
+    Json::Json i(true);
+    if ((bool)h == false) {
+        std::cout << "Bool down cast false not passed\n";
+    }else if ((bool)h == true){
+        std::cout << "Bool down cast true passed\n";
+    }
+    
+    std::cout << "\n";
+    ////////////////////////////////////////////////////////////////////////////////////////////////////
+    Json::Json j(nullptr);
+    if ((std::string)j == "") {
+        std::cout << "String down cast wrong value passed\n";
+    }
+    Json::Json k("");
+    if ((std::string)k == "") {
+        std::cout << "String down cast empty string value passed\n";
+    }
+    Json::Json l("asdj");
+    if ((std::string)l == "asdj") {
+        std::cout << "String down cast string value passed\n";
     }
     return 0;
 }
