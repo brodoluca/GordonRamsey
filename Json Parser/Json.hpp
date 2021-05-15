@@ -32,7 +32,7 @@ const std::set<char> CHARACTERS_TO_ESCAPE_IN_QUOTED_STRING{
     '\t',///\x09 = horizonal tab
 };
 
-
+///this is used to define the states when parsing integers or float
 enum class numberState{
     minusSign,
     zeroOrDigit,
@@ -44,6 +44,8 @@ enum class numberState{
     exponentDigit,
     exponentExtraDigits
 };
+
+
 };
 
 namespace Json{
