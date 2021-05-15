@@ -109,22 +109,23 @@ int main(int argc, const char * argv[]) {
     
     std::cout << "\n";
     ////////////////////////////////////////////////////////////////////////////////////////////////////
-    Json::Json m(42.0);
+    Json::Json m(42);
     if (m.toString() == "42") {
         std::cout << "Integer test passed\n";
     }
-    const auto n = Json::Json::FromString(std::string("42"));
-    if (n == 42 ) {
+    
+    const auto n = Json::Json::FromString(std::string("99999999999999999999999999999999999999999999"));
+     if (n == Json::Json()) {
         std::cout << "Integer passed\n";
     }
     
-    Json::Json o(42.32);
-    if (m.toString() == "42.32") {
+    Json::Json o((double)42.32);
+    if (o.toString() == "42.32") {
         std::cout << "FLoat test passed\n";
     }
-    
-    const auto v = Json::Json::FromString(std::string("234.5"));
-    if (v == 234.5 ) {
+    std::cout << o.toString();
+    const auto v = Json::Json::FromString(std::string("-234.0005e-1"));
+    if (v == -23.40005 ) {
         std::cout << "float passed\n";
     }
     return 0;

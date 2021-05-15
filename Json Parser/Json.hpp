@@ -16,6 +16,7 @@
 #include <iostream>
 #include <stdint.h>
 #include <math.h>
+#include <stdio.h>
 ///TO DO - UNICODE I cant be bothered
 
 
@@ -29,6 +30,19 @@ const std::set<char> CHARACTERS_TO_ESCAPE_IN_QUOTED_STRING{
     '\n',///0x0a
     '\r',///0x0d
     '\t',///\x09 = horizonal tab
+};
+
+
+enum class numberState{
+    minusSign,
+    zeroOrDigit,
+    extraJunk,
+    digit,
+    fraction,
+    exponentSignOrDigit,
+    fractionOptional,
+    exponentDigit,
+    exponentExtraDigits
 };
 };
 
@@ -121,7 +135,7 @@ public:
     ///@retval
     ///The value of the double
     ///@retval
-    ///Nan if it's not a number
+    ///0.0 if it's not a number
     operator double() const;
     
     ///downcasts the object as a string Cpp
@@ -152,6 +166,9 @@ private:
     ///Struct declared here limits it to the scope of this class
     struct impl;
     std::unique_ptr< struct impl > impl_;
+    
+    ///helper function to cast float to string and remove zeros at the end
+    std::string floatToString(double value)const;
 };
 
 
@@ -167,21 +184,7 @@ private:
 ///option -used to configure various oprionshaving to do with encoding json object into a string format
 ///@return
 ///escaped string
-inline std::string escape(std::string escapeString, char escapeChar, const std::set<char>& escapeSet, const Json::EncodingOptions& option){
-    std::string output;
-    for (int i= 0; i< escapeString.size(); i++) {
-        if (escapeSet.find(escapeString[i]) != escapeSet.end()) {
-            output += escapeChar;
-            ///this is used to to the non Ascii stuff (UNICODE), but I dont care
-        }else if(option.escapeNonAscii && (escapeString[i] < 0x20 || escapeString[i] == '=' || escapeString[i]=='\\')){
-            output += "\\u";
-            
-        }
-        output += escapeString[i];
-    }
-    return output;
-}
-
+std::string escape(std::string escapeString, char escapeChar, const std::set<char>& escapeSet, const Json::EncodingOptions& option);
 
 ///this function produces the unescaped versione of the given string. The char can be also set as standard because Json sets them as default, but I like it better this way
 ///@param
@@ -189,19 +192,19 @@ inline std::string escape(std::string escapeString, char escapeChar, const std::
 ///escapeChar - char to remove
 ///@return
 ///unescaped string
-inline std::string unescape(std::string unescapeString, char escapeChar){
-    std::string output;
-    bool escape = false;
-    for (int i= 0; i< unescapeString.size(); ++i) {
-        if (!escape && (unescapeString[i] == escapeChar)) {
-            escape = true;
-        }else{
-            output += unescapeString[i];
-            escape = false;
-        }
-    }
-    return output;
-}
+std::string unescape(std::string unescapeString, char escapeChar);
 
+///this function parses an integer from a given string
+///@param
+///s string that needs to be parsed
+///@return
+///Json object related to that integer
+Json::Json parseInteger(const std::string& s);
 
+///this function parses a float from a given string
+///@param
+///s string that needs to be parsed
+///@return
+///Json object related to that float
+Json::Json parseFloat(const std::string& s);
 #endif /* Json_hpp */
