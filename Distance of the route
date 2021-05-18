@@ -1,0 +1,53 @@
+Distance of the route
+Max match of the route
+consumption 
+Body characteristcs
+Sensors
+
+function that assigns a final value based on:
+
+value = w1 * quantity of sensors + w2* types_of_sensors + w3*distance_goal*has_goal - w4* consumption - w5*body.age + w6*body.reliability - w6*milage - w7*incidents
+
+
+
+the more, the better,
+the more variety, the better
+Every truck will have a set of sensors, different from each other, with certain types  (struct with number of sensor, type of sensor (array of a specific enum type calles "Sensors type"))
+Struct sensor {
+    int num of sensors, 
+    std::vector<sensor_type> sensor type;
+}
+
+enum sensor_type{
+    lidar, 
+    camera, 
+    microphone, 
+    infrared sensor, 
+    sonar
+}
+
+
+the further, the better.
+
+Every truck will have an objective a goal to reach, which is defined by:
+
+struct goal{
+float distance. 
+bool hasGoal;
+}
+
+
+consumption. A number that defines the amount of km per liter
+the less, the better
+
+float consumption
+
+
+Body characteristcs
+
+struct body{
+    age, 
+    reliability, 
+    milage, 
+    incidents. 
+}

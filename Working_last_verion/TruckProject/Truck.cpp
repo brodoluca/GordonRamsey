@@ -253,7 +253,8 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         ///@return
         ///none
         [=](decrease_number_trucks_atom){
-            self->state.tqPlatoon-=1;
+            if(self->state.tqPlatoon > 0)
+                self->state.tqPlatoon-=1;
             std::cout << "["+ self->state.getName() + "]: " +" Platoon after decreasing is : "<<self->state.tqPlatoon<<"\n";
             self->delayed_anon_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(10), update_truck_numbers_atom_v, self->state.tqPlatoon);
         },
@@ -264,7 +265,8 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         ///@return
         ///none
         [=](decrease_number_trucks_atom, truck_quantity quantity){
-            self->state.tqPlatoon-=quantity;
+            if(self->state.tqPlatoon >0)
+                self->state.tqPlatoon-=quantity;
             std::cout << "["+self->state.getName()+"]:"+" Platoon after decreasing by a certain amount is : "<<self->state.tqPlatoon<<"\n";
             self->delayed_anon_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(10), update_truck_numbers_atom_v, self->state.tqPlatoon);
         },

@@ -180,6 +180,7 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
                     self->fork(TruckServerMaster, msg.handle, std::move(buddy));
                     std::cout << "[MASTER]: Im gonna die and fork to a new broker. Connections: "<<self->num_connections() << std::endl;
                     self->quit(caf::sec::feature_disabled);
+                    self->send(buddy, increment_number_trucks_atom_v);
                 }else{
                     ///This is the WIP part, not very useful atm
                     auto a = self->fork(TruckMasterMultiplexer, msg.handle, buddy);
@@ -201,7 +202,7 @@ caf::behavior temp_master_server(caf::io::broker* self, const caf::actor& buddy)
         std::cout << "[TEMP_SERVER]: New Connection_Accepted" << std::endl;
         auto impl = self->fork(TruckServerMaster, msg.handle, std::move(buddy));
         self->quit();
-        self->send(buddy, increment_number_trucks_atom_v, uint32_t(1));
+//        self->send(buddy, increment_number_trucks_atom_v);
         },
       [=](fork_to_master_atom, caf::io::connection_handle hdl){
       auto impl = self->fork(TruckServerMaster,hdl, std::move(buddy));
