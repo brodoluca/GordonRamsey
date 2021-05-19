@@ -180,6 +180,14 @@ caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl,
 /// self - broker itself
 /// buddy - truck  which we are associated to
 caf::behavior temp_server(caf::io::broker *self,const caf::actor& buddy);
+
+
+///This is technically a server. However, this is used as a placeholder when a new truck wants to join.
+///In poor words, this function is used to switch the position of the two trucks. Check the github for more information. I dont want to flood the code with comments
+///@param
+/// self - broker itself
+/// hdl - connection handler
+/// buddy - truck  which we are associated to
 caf::behavior TruckSwitchRoutine(caf::io::broker *self, caf::io::connection_handle hdl,const caf::actor& buddy);
 
 

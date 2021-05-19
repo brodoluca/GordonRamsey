@@ -131,14 +131,13 @@ caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl,
                       ip.pop_back();
                       cstr[20] = ip.back();
                       ip.pop_back();
-//                      std::cout <<ip;
                       ip.back();
                       val2 =atoi(cstr);
                       self->send(buddy, count_trucks_atom_v, std::make_pair(val2,val));
                       break;
                       ///Used to try new stuff
                   case operations::try_luca:
-                      std::cout<< "AAAAA\n";
+//                      std::cout<< "AAAAA\n";
                       break;
                 default:
                       std::cout << "invalid No for op_val, stop" << std::endl;
