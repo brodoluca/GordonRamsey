@@ -44,6 +44,8 @@ public:
     
     bool initiate_port_host_update;
     union{
+        bool initiate_backup_update;
+        
         int ph_count;
     };
     

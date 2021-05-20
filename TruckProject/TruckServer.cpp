@@ -15,7 +15,7 @@ caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl,
             std::cout << "My Mate is down" << std::endl;
             self->quit(dm.reason);
         }
-        
+    
     });
     
     
@@ -25,6 +25,8 @@ caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl,
             self->send(buddy, set_switcheroo_atom_v, 1);
             self->delayed_send(self, std::chrono::milliseconds(3000),update_port_host_previous_atom_v);
             self->delayed_send(self, std::chrono::milliseconds(4000), update_back_up_atom_v);
+        }else{
+            self->delayed_send(buddy, std::chrono::seconds(1), count_trucks_atom_v);
         }
     });
     
@@ -148,9 +150,9 @@ caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl,
                       self->send(buddy, count_trucks_atom_v, std::make_pair(val2,val));
                       break;
                       ///Used to try new stuff
-                  case operations::try_luca:
-//                      std::cout<< "AAAAA\n";
-                      break;
+//                  case operations::try_luca:
+////                      std::cout<< "AAAAA\n";
+//                      break;
                   case operations::update_master_previous_host_port:
                       self->request(buddy, std::chrono::seconds(4),get_host_port_atom_v ).then([=](std::pair<int32_t, std::string> pPortHost) mutable {
                           std::string Host = "c";
@@ -228,6 +230,8 @@ caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl,
                     
             });
         },
+        
+    
         [=](const caf::io::new_connection_msg& msg) {
             std::cout << "[SERVER]: AIA, A-NEW CONECTION" << std::endl;
             self->request(buddy, std::chrono::seconds(2), get_truck_numbers_atom_v).await(
@@ -245,6 +249,7 @@ caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl,
 //                            std::cout << port << std::endl;
                             auto a =self->add_tcp_doorman(port);
                         });
+                        
                     }else{
                         std::cout << "[SERVER]: Connection_refused : too many trucks" << std::endl;
                         self->close(msg.handle);
@@ -259,6 +264,7 @@ caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl,
         },
     };
 };
+
 
 ///Temporary server to allow the truck behind to connect to this truck
 ///This actor will die as soon as a connection is created.

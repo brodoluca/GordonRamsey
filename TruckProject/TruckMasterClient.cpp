@@ -7,7 +7,6 @@
 
 #include "Truck.hpp"
 
-
 caf::behavior TruckMasterClient(caf::io::broker *self, caf::io::connection_handle hdl, const caf::actor& buddy){
     ///buddy is the truck actor. this function tells him to set this one as client
     self->send(buddy, set_client_atom_v);
@@ -73,6 +72,7 @@ caf::behavior TruckMasterClient(caf::io::broker *self, caf::io::connection_handl
                     break;
                 
                 case operations::update_port_host_previous:
+                    std::cout << "[MASTER_CLIENT]: he"<< std::endl;
 //                    copy the buffer into a char buffer.
                     while (strlen(cstr) < temp+3) memcpy(&cstr, ++rd_pos, sizeof(char)*(temp+3));
             

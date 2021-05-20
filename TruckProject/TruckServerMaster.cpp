@@ -24,7 +24,6 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
         });
     
 //    self->delayed_send(buddy, std::chrono::seconds(1), count_trucks_atom_v);
-
     ///Debugging reasons
     std::cout << "[MASTER]: I have been spawned.Connections: "<<self->num_connections() << std::endl;
     ///To allow multiple connections, we create a doorman
@@ -312,7 +311,7 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
                     self->send(buddy, increment_number_trucks_atom_v);
 //                    self->delayed_send(buddy, std::chrono::seconds(3), count_trucks_atom_v);
 //                    self->delayed_send(impl, std::chrono::milliseconds(4000),update_port_host_previous_atom_v);
-//                    self->delayed_send(impl, std::chrono::milliseconds(5000), update_back_up_atom_v);
+                    self->delayed_send(self, std::chrono::milliseconds(50), update_back_up_atom_v);
                 
                 }else{
                     

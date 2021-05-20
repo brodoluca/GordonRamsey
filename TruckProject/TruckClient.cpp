@@ -32,6 +32,7 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
                             self->send(buddy, become_master_atom_v);
                             self->delayed_send(buddy,std::chrono::milliseconds(10), count_trucks_atom_v);
                             self->quit(caf::exit_reason::remote_link_unreachable);
+                            self->delayed_send(buddy, std::chrono::milliseconds(10),truck_left_or_dead_atom_v);
                         }else{
                             std::cout << "[TRUCK]: Connection to truck in front closed" << std::endl;
                             self->delayed_send(buddy, std::chrono::milliseconds(10),truck_left_or_dead_atom_v);
