@@ -15,10 +15,18 @@ caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl,
             std::cout << "My Mate is down" << std::endl;
             self->quit(dm.reason);
         }
+        
     });
     
     
-    self->delayed_send(buddy, std::chrono::seconds(1), count_trucks_atom_v);
+    self->request(buddy, std::chrono::milliseconds(5000), available_to_count_v).await([=](bool res){
+        if (res == true ) {
+            self->delayed_send(buddy, std::chrono::seconds(1), count_trucks_atom_v);
+            self->send(buddy, set_switcheroo_atom_v, 1);
+            self->delayed_send(self, std::chrono::milliseconds(3000),update_port_host_previous_atom_v);
+            self->delayed_send(self, std::chrono::milliseconds(4000), update_back_up_atom_v);
+        }
+    });
     
     
     ///Sends to the buddy to save the pointer to the server
@@ -44,9 +52,9 @@ caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl,
           }
             self->request(buddy, std::chrono::milliseconds(500), get_port_atom_v).then(
                 [=](uint16_t truckPort){auto a = self->add_tcp_doorman(truckPort);});
-            self->send(buddy, decrease_number_trucks_atom_v, truck_quantity(2));
+            self->send(buddy, decrease_number_trucks_atom_v, truck_quantity(1));
             self->become(temp_server(self, std::move(buddy)));
-            self->delayed_send(self, std::chrono::seconds(TIME_FOR_RECONNECTION), somebody_connected_atom_v);
+//            self->delayed_send(self, std::chrono::seconds(TIME_FOR_RECONNECTION), somebody_connected_atom_v);
         },
         ///Updates the truck quantity by certain amount
         [=](update_truck_numbers_atom, truck_quantity q) {
@@ -112,17 +120,20 @@ caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl,
                         write_int(self, hdl, int32_t(0));
                         self->flush(hdl);
                       break;
-                  case operations::update_number_trucks_from_client:
-                      self->send(buddy, increment_number_trucks_atom_v);
+                  case operations::update_number_trucks:
+                      self->send(buddy, update_truck_numbers_atom_v, val);
                       break;
-                      
+
                   case operations::decrease_number_trucks:
                       self->send(buddy, decrease_number_trucks_atom_v);
                       break;
                   case operations::count_trucks:
-                      while (strlen(cstr) < val) {
-                          memcpy(&cstr, ++rd_pos, sizeof(char)*(val+3));
+                      ++rd_pos;
+                      ++rd_pos;
+                      while (strlen(cstr) <val) {
+                          memcpy(&cstr, ++rd_pos, sizeof(char)*(val+5));
                       }
+              
                       ip = cstr;
                       memset(cstr, '0', sizeof(cstr));
                       val = ip.back() -'0';
@@ -131,6 +142,7 @@ caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl,
                       ip.pop_back();
                       cstr[20] = ip.back();
                       ip.pop_back();
+                  
                       ip.back();
                       val2 =atoi(cstr);
                       self->send(buddy, count_trucks_atom_v, std::make_pair(val2,val));
@@ -138,6 +150,26 @@ caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl,
                       ///Used to try new stuff
                   case operations::try_luca:
 //                      std::cout<< "AAAAA\n";
+                      break;
+                  case operations::update_master_previous_host_port:
+                      self->request(buddy, std::chrono::seconds(4),get_host_port_atom_v ).then([=](std::pair<int32_t, std::string> pPortHost) mutable {
+                          std::string Host = "c";
+                          char temp[20] = {'\0'};
+                          uint32_t message = 0;
+                          Host = pPortHost.second;
+                          message = pPortHost.first;
+                          uint16_t length = Host.length();
+                          while(Host.length()<15) Host.append("-");
+                          Host.append("064");
+                          length = Host.length();
+                          message |= length<<16;
+                          std::strcpy(temp, Host.c_str());
+                          write_int(self, hdl, static_cast<uint8_t>(operations::update_port_host_previous));
+                          write_int(self, hdl, message);
+                          self->write(hdl, sizeof(char)*(length), temp);
+                          self->flush(hdl);
+                              
+                      });
                       break;
                 default:
                       std::cout << "invalid No for op_val, stop" << std::endl;
@@ -157,7 +189,6 @@ caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl,
           char temp[20] = {'\0'};
           uint32_t message = 0;
           self->request(buddy, std::chrono::seconds(4), get_host_port_atom_v).then([=](std::pair<int32_t, std::string> pPortHost) mutable {
-              
               
               Host = pPortHost.second;
               message = pPortHost.first;
@@ -204,8 +235,10 @@ caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl,
                     if(number_trucks<=MAX_TRUCKS){
                         std::cout << "[SERVER]: Fork to the routine and send the new truck to update it's coordinate" << std::endl;
                         auto switcheroo = self->fork(TruckSwitchRoutine, msg.handle, std::move(buddy));
+                        self->send(buddy, set_switcheroo_atom_v, 0);
                         self->send(switcheroo,update_port_host_previous_atom_v);
 //                        self->send(buddy, increment_number_trucks_atom_v);
+//                        self->delayed_send(buddy, std::chrono::seconds(2), count_trucks_atom_v);
                         ///open new doorman to handle new connections
                         self->request(buddy, std::chrono::milliseconds(500), get_port_atom_v).then(
                             [=](uint16_t port) {
@@ -241,6 +274,7 @@ caf::behavior temp_server(caf::io::broker *self,const caf::actor& buddy){
         ///Handles a new connection
         ///If the platoon size is less than a certain size, all good
         ///otherwise we close the connection
+    
         [=](const caf::io::new_connection_msg& msg) {
             truck_quantity number_trucks=0;
             self->request(buddy, std::chrono::seconds(2), get_truck_numbers_atom_v).await(
@@ -249,11 +283,13 @@ caf::behavior temp_server(caf::io::broker *self,const caf::actor& buddy){
             });
             if(number_trucks<=MAX_TRUCKS){
                 std::cout << "[SERVER]: New Connection_Accepted" << std::endl;
+                
+                self->delayed_send(buddy, std::chrono::milliseconds(100),increment_number_trucks_atom_v);
                 auto impl = self->fork(TruckServer, msg.handle,buddy);
                 self->send(impl, send_server_atom_v);
-//                self->delayed_send(impl, std::chrono::milliseconds(10),update_truck_numbers_atom_v);
-                self->delayed_send(impl, std::chrono::milliseconds(2000),update_port_host_previous_atom_v);
-                self->delayed_send(impl, std::chrono::milliseconds(1000), update_back_up_atom_v);
+                
+//                self->delayed_send(impl, std::chrono::milliseconds(5000),update_port_host_previous_atom_v);
+//                self->delayed_send(impl, std::chrono::milliseconds(6000), update_back_up_atom_v);
                 self->quit();
             }else{
                 std::cout << "[SERVER]: Connection_refused : too many trucks" << std::endl;

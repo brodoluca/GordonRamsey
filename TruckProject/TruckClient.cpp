@@ -30,6 +30,7 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
                             std::cout << "[TRUCK]: Connection to master closed" << std::endl;
                             self->send(buddy, decrease_number_trucks_atom_v);
                             self->send(buddy, become_master_atom_v);
+                            self->delayed_send(buddy,std::chrono::milliseconds(10), count_trucks_atom_v);
                             self->quit(caf::exit_reason::remote_link_unreachable);
                         }else{
                             std::cout << "[TRUCK]: Connection to truck in front closed" << std::endl;
@@ -39,15 +40,18 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
                 });
           }
         },
+    
         ///Asks server to count trucks
         [=](count_trucks_atom, std::pair<uint32_t, uint32_t> pStopIdCount) {
             write_int(self, hdl, static_cast<uint8_t>(operations::count_trucks));
-            std::string s = std::to_string(pStopIdCount.first);
-            s += std::to_string(pStopIdCount.second);
+            std::string s = std::to_string(int(pStopIdCount.first));
+            s += std::to_string(int(pStopIdCount.second));
             write_int(self, hdl, int32_t(3));
-            self->write(hdl, sizeof(char)*s.length(),s.c_str());
+            self->write(hdl, sizeof(char)*s.length()+5,s.c_str());
             self->flush(hdl);
+        
         },
+
     
         ///Close  the connection with the handle and dies, no response.
         [=](close_connection_atom) {
@@ -106,7 +110,7 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
         },
         ///updates the number of trucks by a certain quantity
         [=](update_truck_numbers_atom, truck_quantity q) {
-            write_int(self, hdl, static_cast<uint8_t>(operations::update_number_trucks_from_client));
+            write_int(self, hdl, static_cast<uint8_t>(operations::update_number_trucks));
             write_int(self, hdl,static_cast<uint32_t>(q));
             self->flush(hdl);
         },
@@ -146,6 +150,7 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
                     self->anon_send(buddy, set_master_connection_atom_v, bool(val));
                     std::cout << "[CLIENT] :master connection : "  << bool(val) << "\n";
                     break;
+                
                     ///Updates the id from a non master connection
                 case operations::update_id_behind:
 //                     self->send(buddy, update_id_behind_atom_v);
@@ -170,6 +175,8 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
                                     delete temp;
                                 });
                     break;
+                    
+                    
                     ///Receives the port and host of the truck in front
                     /// It stores them so that they can be sent to the truck behind to be used as a back up
                 case operations::update_port_host_previous:

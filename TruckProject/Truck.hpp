@@ -34,6 +34,19 @@ public:
     caf::strong_actor_ptr client;
     ///keeps truck of the platoon size
     truck_quantity tqPlatoon = 1;
+    
+    
+    bool initiate_update = false;
+    ///0 for no switcheroo (basic state)
+    ///1 for started switcheroo
+    ///2 for switchereee(the guy who gets switched)
+    int initiated_switcheroo = 0;
+    
+    bool initiate_port_host_update;
+    union{
+        int ph_count;
+    };
+    
     ///stores all the actors handling different connections
     std::vector<caf::actor> vConnectionMultiplexer;//WIP
 public:

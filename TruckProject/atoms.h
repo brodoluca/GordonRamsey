@@ -61,6 +61,9 @@ CAF_ADD_ATOM(truck_block, master_connect_to_my_server_atom);
 CAF_ADD_ATOM(truck_block, master_connects_to_truck_behind);
 CAF_ADD_ATOM(truck_block, set_client_atom);
 CAF_ADD_ATOM(truck_block, try_luca_atom);
+CAF_ADD_ATOM(truck_block, is_switcheroo_atom);
+CAF_ADD_ATOM(truck_block, set_switcheroo_atom);
+CAF_ADD_ATOM(truck_block, available_to_count);
 CAF_ADD_TYPE_ID(truck_block, (std::pair<int32_t, std::string>) )
 CAF_ADD_TYPE_ID(truck_block, (std::pair<uint32_t, uint32_t>))
 

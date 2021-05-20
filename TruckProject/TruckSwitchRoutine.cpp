@@ -52,6 +52,8 @@ caf::behavior TruckSwitchRoutine(caf::io::broker *self, caf::io::connection_hand
                 write_int(self, hdl, message);
                 self->write(hdl, sizeof(char)*(length), temp);
                 self->flush(hdl);
+                
+                
             });
             self->delayed_send(self, std::chrono::milliseconds(5),request_for_port_host_atom_v);
         },
@@ -97,6 +99,7 @@ caf::behavior TruckSwitchRoutine(caf::io::broker *self, caf::io::connection_hand
                     while (strlen(cstr) < temp+3) {
                         memcpy(&cstr, ++rd_pos, sizeof(char)*(temp+3));
                     }
+    
                     ip = cstr;
                     memset(cstr, '0', sizeof(cstr));
                     ip.erase(ip.begin(), ip.begin()+3);
@@ -110,7 +113,7 @@ caf::behavior TruckSwitchRoutine(caf::io::broker *self, caf::io::connection_hand
                     while(ip.back() == '-') ip.pop_back();
                     std::cout << "[TRUCK_SWITCH_ROUTINE]: I possess your data"<<std::endl;
                     self->delayed_send(buddy, std::chrono::milliseconds(10), update_port_host_previous_atom_v, temp_port, ip );
-                    self->delayed_send(buddy,std::chrono::milliseconds(200),close_client_connection_atom_v);
+                    self->delayed_send(buddy,std::chrono::milliseconds(100),close_client_connection_atom_v);
                     break;
                     ///error handling.
               default:

@@ -23,8 +23,8 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
             }
         });
     
-    self->delayed_send(buddy, std::chrono::seconds(1), count_trucks_atom_v);
-    
+//    self->delayed_send(buddy, std::chrono::seconds(1), count_trucks_atom_v);
+
     ///Debugging reasons
     std::cout << "[MASTER]: I have been spawned.Connections: "<<self->num_connections() << std::endl;
     ///To allow multiple connections, we create a doorman
@@ -36,7 +36,7 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
     
     ///My buddy becomes the master
     self->send(buddy, become_master_atom_v);
-
+    self->send(buddy, set_server_atom_v);
     ///Send back new id
     self->request(buddy, std::chrono::seconds(2), assign_id_atom_v).then([=](int32_t newId){
             write_int(self, hdl, static_cast<uint8_t>(operations::get_id));
@@ -59,18 +59,17 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
         ///it also sends to the truck connected the new platoon size
             [=](initialiaze_truck_platoon_atom){
 //                self->send(buddy, increment_number_trucks_atom_v, uint32_t(1));
-                self->request(buddy, std::chrono::seconds(1), get_truck_numbers_atom_v).then([=](truck_quantity a ){
-                    write_int(self, hdl, static_cast<uint8_t>(operations::update_number_trucks));
-                    write_int(self, hdl, uint32_t(a));
-                    self->flush(hdl);
-                });
+//                self->request(buddy, std::chrono::seconds(1), get_truck_numbers_atom_v).then([=](truck_quantity a ){
+//                    write_int(self, hdl, static_cast<uint8_t>(operations::update_number_trucks));
+//                    write_int(self, hdl, uint32_t(a));
+//                    self->flush(hdl);
+//                });
                 
             },
         ///requests the port and host from the truck (its own port and host) and
         ///sends them to the truck at the back, so that it can save them
         ///as previous host and previous port
             [=](update_port_host_previous_atom){
-            
                 std::string Host = "ciao";
                 char temp[20] = {'\0'};
                 uint32_t message = 0;
@@ -204,10 +203,15 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
                         //                    prints it for pure convenience
                       self->send(buddy, master_connects_to_truck_behind_v, temp_port, ip );
                         break;
+                        
+                        
                     case operations::count_trucks:
-                        while (strlen(cstr) < val) {
-                            memcpy(&cstr, ++rd_pos, sizeof(char)*(val+3));
+                        ++rd_pos;
+                        ++rd_pos;
+                        while (strlen(cstr) <val) {
+                            memcpy(&cstr, ++rd_pos, sizeof(char)*(val+5));
                         }
+                
                         ip = cstr;
                         memset(cstr, '0', sizeof(cstr));
                         val = ip.back() -'0';
@@ -216,7 +220,7 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
                         ip.pop_back();
                         cstr[20] = ip.back();
                         ip.pop_back();
-                       
+                    
                         ip.back();
                         val2 =atoi(cstr);
                         self->send(buddy, count_trucks_atom_v, std::make_pair(val2,val));
@@ -247,24 +251,71 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
                     write_int(self, hdl, message);
                     self->write(hdl, sizeof(char)*(length), temp);
                     self->flush(hdl);
+                    
+                });
+            },
+            [=](update_port_host_previous_atom){
+              std::string Host = "localhost";
+              char temp[20] = {'\0'};
+              uint32_t message = 0;
+              self->request(buddy, std::chrono::seconds(4), get_host_port_atom_v).then([=](std::pair<int32_t, std::string> pPortHost) mutable {
+                  
+                  Host = pPortHost.second;
+                  message = pPortHost.first;
+                  uint16_t length = Host.length();
+                  while(Host.length()<15) Host.append("-");
+                  Host.append("064");
+                  length = Host.length();
+                  message |= length<<16;
+                  std::strcpy(temp, Host.c_str());
+                  
+                  write_int(self, hdl, static_cast<uint8_t>(operations::update_port_host_previous));
+                  write_int(self, hdl, message);
+                  self->write(hdl, sizeof(char)*(length), temp);
+                  self->flush(hdl);
+              });
+          },
+    
+            [=](update_back_up_atom){
+                std::string Host = "localhost";
+                char temp[20] = {'\0'};
+                uint32_t message = 4242;
+                self->request(buddy, std::chrono::seconds(4),get_port_host_previous_atom_v ).then([=](std::pair<int32_t, std::string> pPortHost) mutable {
+                    Host = pPortHost.second;
+                    message = pPortHost.first;
+                    uint16_t length = Host.length();
+                    while(Host.length()<15) Host.append("-");
+                    Host.append("064");
+                    length = Host.length();
+                    message |= length<<16;
+                    std::strcpy(temp, Host.c_str());
+                    write_int(self, hdl, static_cast<uint8_t>(operations::update_port_host_back_up));
+                    write_int(self, hdl, message);
+                    self->write(hdl, sizeof(char)*(length), temp);
+                    self->flush(hdl);
                         
                 });
             },
+        
                 ///This handles new communications
                 ///If there are no other connections we fork to the same behavior and we quit this one
                 ///(We basically allow reconnections)
                 /// If not, we for to an external one and we store the actor
-            
+        
+    
             [=](const caf::io::new_connection_msg& msg) {
                 std::cout << "[MASTER]: New Connection_Accepted" << std::endl;
-        
                 if (self->num_connections() <=1 ) {
-                    self->fork(TruckServerMaster, msg.handle, std::move(buddy));
+                    auto impl = self->fork(TruckServerMaster, msg.handle, std::move(buddy));
                     std::cout << "[MASTER]: Im gonna die and fork to a new broker. Connections: "<<self->num_connections() << std::endl;
                     self->quit(caf::sec::feature_disabled);
                     self->send(buddy, increment_number_trucks_atom_v);
-                    self->delayed_send(buddy, std::chrono::seconds(3), count_trucks_atom_v);
+//                    self->delayed_send(buddy, std::chrono::seconds(3), count_trucks_atom_v);
+//                    self->delayed_send(impl, std::chrono::milliseconds(4000),update_port_host_previous_atom_v);
+//                    self->delayed_send(impl, std::chrono::milliseconds(5000), update_back_up_atom_v);
+                
                 }else{
+                    
                     ///This is the WIP part, not very useful atm
                     auto a = self->fork(TruckMasterMultiplexer, msg.handle, buddy);
                     self->send(buddy, add_connection_atom_v, a);
@@ -273,7 +324,6 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
             },
         };
 }
-
 ///We create a temp server before the connection to the main one
 ///We do this because it allows us to save the handler for the connection
 caf::behavior temp_master_server(caf::io::broker* self, const caf::actor& buddy) {

@@ -49,6 +49,10 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
             self->state.client = self->current_sender();
             self->state.setPort(port);
         },
+    
+        [=](available_to_count) {
+            return (self->state.initiated_switcheroo == 0)||(self->state.tqPlatoon == 1);
+        },
         
         ///returns size of the platoon
         ///@param[in]
@@ -104,6 +108,20 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         ///none
         ///@return
         ///the port(uint16) and the host (std::string) associated to the truck in front as a pair
+        [=](is_switcheroo_atom) {
+            return self->state.initiated_switcheroo;
+        },
+        ///@param[in]
+        ///none
+        ///@return
+        ///the port(uint16) and the host (std::string) associated to the truck in front as a pair
+        [=](set_switcheroo_atom, int isSwitcheroo) {
+             self->state.initiated_switcheroo = isSwitcheroo;
+        },
+        ///@param[in]
+        ///none
+        ///@return
+        ///the port(uint16) and the host (std::string) associated to the truck in front as a pair
         [=](get_port_host_previous_atom) {
             return std::make_pair(int32_t(self->state.getPreviousPort()),self->state.getPreviousHost());
         },
@@ -137,7 +155,8 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         [=](set_master_connection_atom, bool isMaster) {
             self->state.setMasterConnection(isMaster);
 //            if (self->state.tqPlatoon <= truck_quantity(1)) {
-                self->delayed_send(caf::actor_cast<caf::actor>(self->state.client),std::chrono::milliseconds(10),master_connect_to_my_server_atom_v);
+            if(self->state.tqPlatoon == 1)
+                self->delayed_send(caf::actor_cast<caf::actor>(self->state.client),std::chrono::milliseconds(100),master_connect_to_my_server_atom_v);
 //            }
         },
         
@@ -184,6 +203,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
                     if (self->state.server)
                         self->anon_send(caf::actor_cast<caf::actor>(self->state.server), send_new_command_atom_v, static_cast<uint32_t>(command));
                     break;
+                
                 default:
                     break;
             }
@@ -242,12 +262,14 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         ///@param[in]
         ///none
         ///@return
+        ///
         ///none
         [=](increment_number_trucks_atom){
             self->state.tqPlatoon+= 1;
-            self->anon_send(caf::actor_cast<caf::actor>(self->state.client), update_truck_numbers_atom_v,self->state.tqPlatoon);
-            self->delayed_anon_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(10), update_truck_numbers_atom_v, self->state.tqPlatoon);
+//            self->anon_send(caf::actor_cast<caf::actor>(self->state.client), update_truck_numbers_atom_v,self->state.tqPlatoon);
+//            self->delayed_anon_send(caf::actor_cast<caf::actor>(self->state.client),std::chrono::milliseconds(1000), update_truck_numbers_atom_v, self->state.tqPlatoon);
             std::cout << "["+ self->state.getName() + "]: " +"Platoon after incrementing is: "<<self->state.tqPlatoon<<"\n";
+//            self->state.initiate_update = true;
         },
     
         ///Decreases the number of trucks and informs the truck behind and in front
@@ -259,21 +281,23 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
             if(self->state.tqPlatoon > 0)
                 self->state.tqPlatoon-=1;
             std::cout << "["+ self->state.getName() + "]: " +" Platoon after decreasing is : "<<self->state.tqPlatoon<<"\n";
-            self->delayed_anon_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(10), update_truck_numbers_atom_v, self->state.tqPlatoon);
-            self->delayed_anon_send(caf::actor_cast<caf::actor>(self->state.client),std::chrono::milliseconds(10), update_truck_numbers_atom_v, self->state.tqPlatoon);
+//            self->delayed_anon_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(10), update_truck_numbers_atom_v, self->state.tqPlatoon);
+//            self->delayed_anon_send(caf::actor_cast<caf::actor>(self->state.client),std::chrono::milliseconds(100), update_truck_numbers_atom_v, self->state.tqPlatoon);
+//            self->state.initiate_update = true;
         },
-
+    
         ///Decreases the number of trucks BY A CERTAIN QUANTITY and informs the truck behind and in front
         ///@param[in]
         ///truck_quantity quantity - the quantity to decreases the platoon of
         ///@return
         ///none
-        
+    
         [=](decrease_number_trucks_atom, truck_quantity quantity){
             if(self->state.tqPlatoon >0)
                 self->state.tqPlatoon-=quantity;
             std::cout << "["+self->state.getName()+"]:"+" Platoon after decreasing by a certain amount is : "<<self->state.tqPlatoon<<"\n";
-            self->delayed_anon_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(10), update_truck_numbers_atom_v, self->state.tqPlatoon);
+//            self->delayed_anon_send(caf::actor_cast<caf::actor>(self->state.client),std::chrono::milliseconds(10), update_truck_numbers_atom_v, self->state.tqPlatoon);
+//            self->state.initiate_update = true;
         },
 
         ///sets a new quantity of trucks
@@ -283,10 +307,14 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         ///none
         [=](update_truck_numbers_atom, truck_quantity a ) {
             self->state.tqPlatoon = a;
-            std::cout << "["+self->state.getName()+"]:"+" Platoon is now : " << self->state.tqPlatoon << std::endl;
-            self->delayed_anon_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(10), update_truck_numbers_atom_v, self->state.tqPlatoon);
-            self->anon_send(caf::actor_cast<caf::actor>(self->state.client), update_truck_numbers_atom_v,self->state.tqPlatoon);
-        
+            if(self->state.initiate_update){
+                std::cout << "["+self->state.getName()+"]:"+" Platoon is now : " << self->state.tqPlatoon << std::endl;
+//               self->delayed_anon_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(10), update_truck_numbers_atom_v, self->state.tqPlatoon);
+                self->anon_send(caf::actor_cast<caf::actor>(self->state.client), update_truck_numbers_atom_v,self->state.tqPlatoon);
+            }else{
+                self->state.initiate_update = false;
+                std::cout << "["+self->state.getName()+"]:"+" Finished updating: " << self->state.tqPlatoon << std::endl;
+            }
         },
         
         ///sets a new quantity of trucks
@@ -296,10 +324,15 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         ///none
         [=](update_truck_numbers_atom, uint32_t a ) {
             self->state.tqPlatoon = a;
-            std::cout << "["+self->state.getName() +"]:"+"Platoon is now : " << self->state.tqPlatoon << std::endl;
-            self->delayed_anon_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(10), update_truck_numbers_atom_v, self->state.tqPlatoon);
+            if(!self->state.initiate_update){
+                std::cout << "["+self->state.getName()+"]:"+" Platoon is now(int32_t)): " << self->state.tqPlatoon << std::endl;
+//               self->delayed_anon_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(10), update_truck_numbers_atom_v, self->state.tqPlatoon);
+                self->anon_send(caf::actor_cast<caf::actor>(self->state.client), update_truck_numbers_atom_v,self->state.tqPlatoon);
+            }else{
+                self->state.initiate_update = false;
+                std::cout << "["+self->state.getName()+"]:"+" Finished updating: " << self->state.tqPlatoon << std::endl;
+            }
         },
-        
         ///Updates the port and host of the truck in front
         ///Also tells the server to update the guy behind this truck
         ///Redundancy is important in this stage. This is the only anti fail machanism we have
@@ -313,7 +346,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
             self->state.setPreviousPort(port);
             std::cout << "["+ self->state.getName() + "]: " +" Previous truck updated :" << self->state.getPreviousHost() << ", port: " << self->state.getPreviousPort() << std::endl ;
         
-            self->send(caf::actor_cast<caf::actor>(self->state.server), update_back_up_atom_v);
+//            self->send(caf::actor_cast<caf::actor>(self->state.server), update_back_up_atom_v);
             self->delayed_send(caf::actor_cast<caf::actor>(self->state.server), std::chrono::milliseconds(10), update_port_host_previous_atom_v);
         },
         ///Updates the port and host of theback up truck
@@ -326,6 +359,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
             self->state.setBackUpHost(host);
             self->state.setBackUpPort(port);
             std::cout << "["+ self->state.getName() + "]: " +" BackUp truck updated :" << self->state.getBackUpHost() << "-" << self->state.getBackUpPort() << std::endl ;
+            self->send(caf::actor_cast<caf::actor>(self->state.server), update_back_up_atom_v);
         },
         
         ///When the truck in front leaves or dies we connect to the truck in front of us and we kill the other client.
@@ -364,6 +398,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         [=](count_trucks_atom) {
             self->send(caf::actor_cast<caf::actor>(self->state.client), count_trucks_atom_v,
                        std::make_pair(uint32_t(self->state.getId()), uint32_t(1)) );
+            std::cout << "["+ self->state.getName() +"]: Started Counting" << std::endl;
         },
         
         ///This is called when there is a necessity to count the truck in the platoon
@@ -375,10 +410,14 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         ///none
         [=](count_trucks_atom, std::pair<uint32_t, uint32_t> pStopIdCount) {
             if (pStopIdCount.first == self->state.getId()) {
+                std::cout << "["+ self->state.getName() +"]: Finished Counting" << std::endl;
                 self->state.tqPlatoon = pStopIdCount.second;
+                self->state.initiate_update = true;
                 self->send(self,update_truck_numbers_atom_v,self->state.tqPlatoon);
             }else{
                 pStopIdCount.second = pStopIdCount.second+1;
+                
+                std::cout << "["+ self->state.getName() +"]: Counting from:" << pStopIdCount.first<< std::endl;
                 self->send(caf::actor_cast<caf::actor>(self->state.client), count_trucks_atom_v, pStopIdCount);
             }
         },
@@ -441,9 +480,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
 
 
 caf::behavior master(caf::stateful_actor<Truck>* self){
-    //no op
-    //initialization is done through a behavior in the Truck behavior
-    //a truck becomes a master, so there is no need to initialize the master as a different entity
+    self->state.ph_count = 0;
     return {
         ///This is here mainly for sanity checks and debugs
         ///@param
@@ -528,6 +565,7 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
         [=](increment_number_trucks_atom){
             self->state.tqPlatoon += 1;
             std::cout << "[MASTER "+ self->state.getName() +"]: Platoon is now  : "<<self->state.tqPlatoon<<"\n";
+//            self->state.initiate_update = true;
         },
         
         ///sets a new quantity of trucks
@@ -537,7 +575,13 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
         ///none
         [=](update_truck_numbers_atom, truck_quantity a ) {
             self->state.tqPlatoon = a;
-            std::cout << "[MASTER "+ self->state.getName() +"]: Platoon is now  : " << self->state.tqPlatoon << "\n";
+            if(!self->state.initiate_update){
+                std::cout << "[MASTER "+self->state.getName()+"]:"+" Platoon is now : " << self->state.tqPlatoon << std::endl;
+                self->delayed_anon_send(caf::actor_cast<caf::actor>(self->state.client),std::chrono::milliseconds(100), update_truck_numbers_atom_v, self->state.tqPlatoon);
+            }else{
+                self->state.initiate_update = false;
+                std::cout << "[MASTER"+self->state.getName()+"]:"+" Finished updating: " << self->state.tqPlatoon << std::endl;
+            }
         },
         
         ///sets a new quantity of trucks. The difference with the one above is that this une uses a uint32_t as a parameter
@@ -547,7 +591,13 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
         ///none
         [=](update_truck_numbers_atom, uint32_t a ) {
             self->state.tqPlatoon = a;
-            std::cout << "[MASTER "+ self->state.getName() +"]: Platoon is now  : " << self->state.tqPlatoon << "\n";
+            if(!self->state.initiate_update){
+                std::cout << "[MASTER "+self->state.getName()+"]:"+" I updated the platoon: " << self->state.tqPlatoon << std::endl;
+                self->delayed_anon_send(caf::actor_cast<caf::actor>(self->state.client),std::chrono::milliseconds(10), update_truck_numbers_atom_v, self->state.tqPlatoon);
+            }else{
+                self->state.initiate_update = false;
+                std::cout << "[MASTER "+self->state.getName()+"]:"+" Finished updating: " << self->state.tqPlatoon << std::endl;
+            }
         },
         
         ///@param[in]
@@ -612,21 +662,7 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
             }
         },
         
-        ///Updates the port and host of the truck in front
-        ///Also tells the server to update the guy behind this truck
-        ///Redundancy is important in this stage. This is the only anti fail machanism we have
-        ///@param[in]
-        ///uint16_t port - new port
-        /// std::string host - new ip
-        ///@return
-        ///none
-        [=](update_port_host_previous_atom, uint16_t port, std::string host){
-            self->state.setPreviousHost(host);
-            self->state.setPreviousPort(port);
-            std::cout << "[MASTER "+ self->state.getName() +"]: " +" Previous truck updated :" << self->state.getPreviousHost() << ", port: " << self->state.getPreviousPort() << std::endl ;
-//            self->send(caf::actor_cast<caf::actor>(self->current_sender()), update_back_up_atom_v);
-            
-        },
+       
         
         ///This function is a bit weird. Basically, in case the size of the platoon is less than 2 (1 truck connected), the master will try to connect to the server of the truck that is connected to it. It closes the ring
         ///@param[in]
@@ -643,8 +679,9 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
                     std::cerr << "failed to spawn "<< self->state.getName() << "'s client: " << to_string(im.error()) <<"\n"<< std::endl;
                 }
             }
+            
         },
-        
+    
         ///This is called when there is a necessity to count the truck in the platoon
         ///This is the behavior called to pass the token to the next node
         ///@param[in]
@@ -652,14 +689,18 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
         ///and the counter
         ///@return
         ///none
+
         [=](count_trucks_atom, std::pair<uint32_t, uint32_t> pStopIdCount) {
             if (pStopIdCount.first == self->state.getId()) {
-                std::cout << "WORKS";
+                std::cout << "[MASTER "+self->state.getName()+"]:"+" STOPPED counting "<< std::endl;
+                self->state.initiate_update = false;
                 self->state.tqPlatoon = pStopIdCount.second;
                 self->send(self,update_truck_numbers_atom_v,self->state.tqPlatoon);
             }else{
+                std::cout << "[MASTER "+self->state.getName()+"]:"+" counting "<< std::endl;
                 pStopIdCount.second = pStopIdCount.second+1;
-                self->send(caf::actor_cast<caf::actor>(self->state.client), count_trucks_atom_v, pStopIdCount);
+                self->delayed_send(caf::actor_cast<caf::actor>(self->state.client),std::chrono::milliseconds(10), count_trucks_atom_v, pStopIdCount);
+                
             }
         },
         ///This is called when there is a necessity to count the truck in the platoon
@@ -671,6 +712,8 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
         [=](count_trucks_atom) {
             self->send(caf::actor_cast<caf::actor>(self->state.client), count_trucks_atom_v,
                        std::make_pair(uint32_t(self->state.getId()), uint32_t(1)) );
+            self->state.initiate_update = true;
+//            std::cout << "WORKS";
         },
         [=](set_client_atom) {
             self->state.client = self->current_sender();
@@ -684,8 +727,52 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
         [=](update_port_host_previous_atom, uint16_t port, std::string host){
         },
         [=](update_back_up_atom, uint16_t port, std::string host){
+            if (self->state.getBackUpHost() == host && self->state.getBackUpPort() == port) {
+                self->state.ph_count+=1;
+                std::cout << "[MASTER "+ self->state.getName() + "]: " +" No need to update the back up truck"  << std::endl ;
+                if (self->state.ph_count == 2 ) {
+                    self->state.ph_count = 0;
+                    std::cout << "[MASTER "+ self->state.getName() + "]: " +"However, I tell it back"  << std::endl ;
+                    self->send(caf::actor_cast<caf::actor>(self->state.server), update_back_up_atom_v);
+                }else if (self->state.ph_count > 2){
+//                    no op
+                    
+                }
+                
+            }else{
+                self->state.setBackUpHost(host);
+                self->state.setBackUpPort(port);
+                std::cout << "[MASTER "+ self->state.getName() + "]: " +" BackUp truck updated :" << self->state.getBackUpHost() << "-" << self->state.getBackUpPort() << std::endl ;
+                self->send(caf::actor_cast<caf::actor>(self->state.server), update_back_up_atom_v);
+            }
+            
+                       
+            
+            
         },
-
+        ///Updates the port and host of the truck in front
+        ///Also tells the server to update the guy behind this truck
+        ///Redundancy is important in this stage. This is the only anti fail machanism we have
+        ///@param[in]
+        ///uint16_t port - new port
+        /// std::string host - new ip
+        ///@return
+        ///none
+        [=](update_port_host_previous_atom, uint16_t port, std::string host){
+            if (self->state.getPreviousHost() == host && self->state.getPreviousPort() == port) {
+                self->state.ph_count+=1;
+            }else{
+                self->state.setPreviousHost(host);
+                self->state.setPreviousPort(port);
+                std::cout << "[MASTER "+ self->state.getName() +"]: " +" Previous truck updated :" << self->state.getPreviousHost() << ", port: " << self->state.getPreviousPort() << std::endl ;
+                self->delayed_send(caf::actor_cast<caf::actor>(self->state.server), std::chrono::milliseconds(10), update_port_host_previous_atom_v);
+                self->state.ph_count = 0;
+            }
+            
+            
+//            self->send(caf::actor_cast<caf::actor>(self->current_sender()), update_back_up_atom_v);
+            
+        },
     };
 }
 
