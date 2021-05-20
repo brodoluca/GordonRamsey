@@ -13,6 +13,7 @@ caf::actor spawnNewTruck(caf::actor_system& system,std::string name, std::string
         send_as(*server_actor,truck_actor, initialize_atom_v, name, own_port);
         send_as(*server_actor,truck_actor, update_port_host_atom_v, own_port,host);
     } catch (const char* msg) {
+        self->send_exit(truck_actor, caf::exit_reason::user_shutdown);
         self->send(truck_actor, initialize_atom_v, name, own_port);
         std::cerr << "failed to spawn "<< name << "'s client: " << to_string(server_actor.error()) <<"\n"<< msg << "\n\n"<< std::endl;
     }
@@ -35,6 +36,7 @@ caf::actor spawnNewMaster(caf::actor_system& system,std::string name, std::strin
         }
         print_on_exit(*server_actor, "TEMP_SERVER");
         send_as(*server_actor,truck_actor, update_port_host_atom_v, port,host);
+        send_as(*server_actor,truck_actor, initialize_atom_v, name);
     } catch (const char* msg) {
         self->send_exit(truck_actor, caf::exit_reason::user_shutdown);
         std::cerr << msg << ": "<< to_string(server_actor.error()) <<"\n" << std::endl;
@@ -61,6 +63,7 @@ int spawnNewClient(caf::actor_system& system,std::string name, std::string host 
         send_as(*server_actor,buddy, update_port_host_atom_v, own_port,host);
         return 0;
     } catch (const char* msg) {
+        
         self->send(buddy, initialize_atom_v, name, own_port);
         std::cerr << "failed to spawn "<< name << "'s client: " << to_string(server_actor.error()) <<"\n"<< msg << "\n\n"<< std::endl;
         return -1;

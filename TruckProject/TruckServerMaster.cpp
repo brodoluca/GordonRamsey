@@ -32,7 +32,8 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
     self->configure_read(hdl,caf::io::receive_policy::at_most(sizeof(uint8_t)+sizeof(uint32_t)+sizeof(char)*21));
     ///Let's start with the inputs
     self->delayed_send(self, std::chrono::seconds(2), ask_for_input_atom_v);
-    
+    ///Let's start with the inputs
+    self->delayed_send(self, std::chrono::seconds(10), set_speed_atom_v);
     ///My buddy becomes the master
     self->send(buddy, become_master_atom_v);
     self->send(buddy, set_server_atom_v);
@@ -42,12 +43,28 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
             write_int(self, hdl, newId);
             self->flush(hdl);
         });
-    
+    self->request(buddy, std::chrono::milliseconds(50), get_truck_numbers_atom_v).await(
+        [=](truck_quantity a ){
+        if (a==3) {
+            self->delayed_send(buddy, std::chrono::milliseconds(2000),count_trucks_atom_v);
+        }
+    });
     ///Initialize the platoon by adding one truck
     self->delayed_send(self, std::chrono::milliseconds(10), initialiaze_truck_platoon_atom_v);
     ///updates port and host of the truck behind
     self->delayed_send(self, std::chrono::milliseconds(20), update_port_host_previous_atom_v);
         return {
+            [=](set_speed_atom){
+                self->request(buddy, std::chrono::milliseconds(50), get_speed_atom_v).await(
+                    [=](float speed) {
+                        write_int(self, hdl, static_cast<uint8_t>(operations::set_speed));
+                        write_int(self, hdl,static_cast<uint32_t>(speed));
+                        self->flush(hdl);
+                    },[&](const caf::error& err) {
+                        std::cout << "*** cannot compute => "<< std::to_string(err.category()) << std::endl;
+                  });
+//                self->delayed_send(self, std::chrono::seconds(6), set_speed_atom_v);
+            },
         ///polls the input to an actor responsible for it
             [=](ask_for_input_atom){
                 auto input = self->home_system().spawn(InputMonitor);
@@ -100,25 +117,25 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
         ///Use this part to send commands to the platoon
         ///The fifth command is used for testing
             [=](uint32_t a) {
+                
                 write_int(self, hdl, static_cast<uint8_t>(operations::command));
                 switch (a) {
                     case 1:
-                        
                         write_int(self, hdl, static_cast<uint32_t>(commands::stop));
+                        self->send(buddy,get_new_command_v,static_cast<uint32_t>(commands::stop));
                         break;
                     case 2:
-                        
                         write_int(self, hdl, static_cast<uint32_t>(commands::accellerate));
+                        self->send(buddy,get_new_command_v,static_cast<uint32_t>(commands::accellerate));
                         break;
                     case 3:
-                       
                         write_int(self, hdl, static_cast<uint32_t>(commands::decellerate));
+                        self->send(buddy,get_new_command_v,static_cast<uint32_t>(commands::decellerate));
                         break;
                     case 4:
-                       
                         write_int(self, hdl, static_cast<uint32_t>(commands::start));
+                        self->send(buddy,get_new_command_v,static_cast<uint32_t>(commands::start));
                         break;
-                    
                     default:
                         break;
                 }
@@ -308,11 +325,14 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
                     auto impl = self->fork(TruckServerMaster, msg.handle, std::move(buddy));
                     std::cout << "[MASTER]: Im gonna die and fork to a new broker. Connections: "<<self->num_connections() << std::endl;
                     self->quit(caf::sec::feature_disabled);
+                    
+                        
                     self->send(buddy, increment_number_trucks_atom_v);
 //                    self->delayed_send(buddy, std::chrono::seconds(3), count_trucks_atom_v);
 //                    self->delayed_send(impl, std::chrono::milliseconds(4000),update_port_host_previous_atom_v);
-                    self->delayed_send(self, std::chrono::milliseconds(50), update_back_up_atom_v);
-                
+                    self->delayed_send(impl, std::chrono::milliseconds(50), update_back_up_atom_v);
+                    
+                    
                 }else{
                     
                     ///This is the WIP part, not very useful atm

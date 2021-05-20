@@ -19,6 +19,7 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
     ///defines how much we want to read from the buffer
     self->configure_read(hdl, caf::io::receive_policy::at_most(sizeof(uint8_t)+sizeof(uint32_t)+sizeof(char)*21));
     return {
+        
         ///Handles a closed connection.
         ///If it's a master connection this becomes the master
         ///Otherwise tries to use the backup connection
@@ -28,11 +29,15 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
                 [=](bool res){
                         if(res){
                             std::cout << "[TRUCK]: Connection to master closed" << std::endl;
+                           
+                            
                             self->send(buddy, decrease_number_trucks_atom_v);
                             self->send(buddy, become_master_atom_v);
                             self->delayed_send(buddy,std::chrono::milliseconds(10), count_trucks_atom_v);
                             self->quit(caf::exit_reason::remote_link_unreachable);
                             self->delayed_send(buddy, std::chrono::milliseconds(10),truck_left_or_dead_atom_v);
+                            
+                            
                         }else{
                             std::cout << "[TRUCK]: Connection to truck in front closed" << std::endl;
                             self->delayed_send(buddy, std::chrono::milliseconds(10),truck_left_or_dead_atom_v);
@@ -60,7 +65,7 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
             self->close(hdl);
             self->quit();
         },
-        ///Close  the connection with the handle and dies, no response.
+        
         [=](master_connect_to_my_server_atom) {
             std::cout << "[CLIENT]:Master should connect to me.\n";
             self->request(buddy, std::chrono::seconds(2), get_host_port_atom_v).then(
@@ -151,7 +156,9 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
                     self->anon_send(buddy, set_master_connection_atom_v, bool(val));
                     std::cout << "[CLIENT] :master connection : "  << bool(val) << "\n";
                     break;
-                
+                case operations::set_speed:
+                    self->anon_send(buddy, set_speed_atom_v, static_cast<float>(val));
+                    break;
                     ///Updates the id from a non master connection
                 case operations::update_id_behind:
 //                     self->send(buddy, update_id_behind_atom_v);

@@ -53,7 +53,6 @@ caf::behavior TruckSwitchRoutine(caf::io::broker *self, caf::io::connection_hand
                 self->write(hdl, sizeof(char)*(length), temp);
                 self->flush(hdl);
                 
-                
             });
             self->delayed_send(self, std::chrono::milliseconds(5),request_for_port_host_atom_v);
         },

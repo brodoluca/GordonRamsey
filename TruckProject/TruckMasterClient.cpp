@@ -7,6 +7,7 @@
 
 #include "Truck.hpp"
 
+
 caf::behavior TruckMasterClient(caf::io::broker *self, caf::io::connection_handle hdl, const caf::actor& buddy){
     ///buddy is the truck actor. this function tells him to set this one as client
     self->send(buddy, set_client_atom_v);
@@ -25,6 +26,7 @@ caf::behavior TruckMasterClient(caf::io::broker *self, caf::io::connection_handl
             write_int(self, hdl, static_cast<uint32_t>(7));
             self->flush(hdl);
             self->delayed_send(self, std::chrono::seconds(3), try_luca_atom_v);
+            std::cout << "us\n";
         },
         ///THIS IS FOR DEBUG PURPOSES
         ///THis is a placeholder, is not necessary anymore
@@ -57,7 +59,7 @@ caf::behavior TruckMasterClient(caf::io::broker *self, caf::io::connection_handl
             uint32_t temp_length = MASK_FIRST_HALF(val);
             uint16_t temp = SHIFT_TO_FIRST_BITS(temp_length);
             uint16_t temp_port = MASK_SECOND_HALF(val);
-                        
+                    
             char cstr[22] = {'\0'}; //initialize translation buffer
             std::string ip; //declare conversion string
             switch (static_cast<operations>(op_val)) {
@@ -65,29 +67,24 @@ caf::behavior TruckMasterClient(caf::io::broker *self, caf::io::connection_handl
                     ///This is obviously useless because the master already has an ID
                 case operations::get_id:
                 std::cout << "[MASTER_CLIENT]: Dont want a new ID"<< std::endl;
-//                    write_int(self, hdl, static_cast<uint8_t>(operations::update_master_previous_host_port));
-//                    write_int(self, hdl,static_cast<uint32_t>(0));
-//                    self->flush(hdl);
-//                    self->delayed_send(self, std::chrono::milliseconds(10), which_front_id_atom_v);
                     break;
-                
+            
                 case operations::update_port_host_previous:
-                    std::cout << "[MASTER_CLIENT]: he"<< std::endl;
 //                    copy the buffer into a char buffer.
                     while (strlen(cstr) < temp+3) memcpy(&cstr, ++rd_pos, sizeof(char)*(temp+3));
-            
                     factorHostPort(ip, cstr);
-
                     self->send(buddy, update_port_host_previous_atom_v, temp_port, ip );
                     break;
                     
                 case operations::update_port_host_back_up:
 //                    copy the buffer into a char buffer.
                     while (strlen(cstr) < temp+3) memcpy(&cstr, ++rd_pos, sizeof(char)*(temp+3));
-                    
                     factorHostPort(ip, cstr);
-
                     self->send(buddy, update_back_up_atom_v, temp_port, ip );
+                    break;
+                case operations::set_speed:
+                    std::cout << "[MASTER_CLIENT]:SPEED1" << std::endl;
+                    self->anon_send(buddy, set_speed_atom_v, static_cast<float>(val));
                     break;
               default:
 //                    std::cout << "[MASTER_CLIENT]:invalid value for op_val, stop" << std::endl;

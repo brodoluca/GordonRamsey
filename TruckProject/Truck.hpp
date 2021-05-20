@@ -84,7 +84,7 @@ private:
     ///front id, useless, should be removed
     int32_t iFrontId_;
     ///current speed
-    float fSpeed;
+    float fSpeed = 0;
     ///Port of the server of this truck
     uint16_t uPort;
     ///Ip address of the server of this truck

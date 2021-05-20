@@ -15,8 +15,11 @@ caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl,
             std::cout << "My Mate is down" << std::endl;
             self->quit(dm.reason);
         }
+        
     
     });
+    
+    
     
     
     self->request(buddy, std::chrono::milliseconds(5000), available_to_count_v).await([=](bool res){
@@ -52,9 +55,19 @@ caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl,
           if (msg.handle == hdl) {
             std::cout << "[SERVER]: Connection closed" << std::endl;
           }
+            
+            self->request(buddy, std::chrono::milliseconds(500), get_truck_numbers_atom_v).await(
+                [=](truck_quantity size){
+                    if(size != 1){
+                        self->send(buddy, decrease_number_trucks_atom_v, truck_quantity(1));
+                    }
+                    
+                
+                });
+            
             self->request(buddy, std::chrono::milliseconds(500), get_port_atom_v).then(
                 [=](uint16_t truckPort){auto a = self->add_tcp_doorman(truckPort);});
-            self->send(buddy, decrease_number_trucks_atom_v, truck_quantity(1));
+            
             self->become(temp_server(self, std::move(buddy)));
 //            self->delayed_send(self, std::chrono::seconds(TIME_FOR_RECONNECTION), somebody_connected_atom_v);
         },
@@ -110,6 +123,8 @@ caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl,
                           self->flush(hdl);
                       });
                       break;
+                      
+                  
                       
                   case operations::master:
                         write_int(self, hdl, static_cast<uint8_t>(operations::master));

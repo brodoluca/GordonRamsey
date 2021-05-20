@@ -10,13 +10,13 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
     //initialization is done through a behavior
     return{
         
-        ///Initializes the actor with a name and save the reference to the client that spawned it (be careful, if spawned by something else will save the reference to that thing)
+        
+        ///Initializes the actor with a name
         ///@param[in]
         /// name - name of the actor
         [=](initialize_atom,std::string name) {
             self->state.setName(name);
             std::cout<<self->state.getName() + " has been spawned \n";
-            self->state.client = self->current_sender();
         },
         
         ///Initializes the actor with a name and save the reference to the client that spawned it (be careful, if spawned by something else will save the reference to that thing)
@@ -49,6 +49,15 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
             self->state.client = self->current_sender();
             self->state.setPort(port);
         },
+        
+        ///returns the speed of the truck
+        ///@return
+        ///  A FLOAT
+        [=](get_speed_atom) {
+            return self->state.getSpeed();
+        },
+        
+        
         ///used to check if the truck should start to count or not
         ///@return
         ///  boolean
@@ -134,6 +143,16 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         ///the port(uint16) and the host (std::string) associated to the back up truck as a pair
         [=](get_port_host_back_up_atom) {
             return std::make_pair(int32_t(self->state.getBackUpPort()),self->state.getBackUpHost());
+        },
+        
+        ///set the speed of the truck
+        ///@param[in]
+        ///the spead as float
+        ///@return
+        /// none
+        [=](set_speed_atom, float speed) {
+            self->state.setSpeed(speed);
+            std::cout << "["+self->state.getName()+"] new speed: " + std::to_string(self->state.getSpeed()) +"\n";
         },
         
         ///Assigns a new id to the truck and updates back by subtracting one. in addition, asks to the client if its a master connection
@@ -280,6 +299,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         [=](decrease_number_trucks_atom){
             if(self->state.tqPlatoon > 0)
                 self->state.tqPlatoon-=1;
+           
             std::cout << "["+ self->state.getName() + "]: " +" Platoon after decreasing is : "<<self->state.tqPlatoon<<"\n";
         },
     
@@ -364,10 +384,13 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         ///@return
         ///none
         [=](truck_left_or_dead_atom) {
-            auto im = self->home_system().middleman().spawn_client(TruckClient, self->state.getBackUpHost(), self->state.getBackUpPort(), self);
-            if(!im)
-                std::cerr << "failed to spawn "<< self->state.getName() << "'s client: " << to_string(im.error()) <<"\n"<< std::endl;
-            self->send_exit(caf::actor_cast<caf::actor>(self->current_sender()), caf::exit_reason::remote_link_unreachable);
+          
+                auto im = self->home_system().middleman().spawn_client(TruckClient, self->state.getBackUpHost(), self->state.getBackUpPort(), self);
+                if(!im)
+                    std::cerr << "failed to spawn "<< self->state.getName() << "'s client: " << to_string(im.error()) <<"\n"<< std::endl;
+                self->send_exit(caf::actor_cast<caf::actor>(self->current_sender()), caf::exit_reason::remote_link_unreachable);
+          
+            
         },
         
         ///This is called by the switcheroo function. Basically, it creates a client that connects to the truck in front of the truck we want to connect to
@@ -561,7 +584,7 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
         ///none
         [=](update_truck_numbers_atom, truck_quantity a ) {
             self->state.tqPlatoon = a;
-            if(!self->state.initiate_update){
+            if(self->state.initiate_update){
                 std::cout << "[MASTER "+self->state.getName()+"]:"+" Platoon is now : " << self->state.tqPlatoon << std::endl;
                 self->delayed_anon_send(caf::actor_cast<caf::actor>(self->state.client),std::chrono::milliseconds(100), update_truck_numbers_atom_v, self->state.tqPlatoon);
             }else{
@@ -599,10 +622,18 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
         ///none
         ///@return
         ///none
+        
         [=](decrease_number_trucks_atom, truck_quantity quantity){
             if(self->state.tqPlatoon != 0){
                 self->state.tqPlatoon-=quantity;
             }
+//            if (self->state.tqPlatoon==2) {
+//                ///initialize master_truck sequence
+//                self->delayed_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::seconds(1),update_back_up_atom_v);
+//                self->state.initiate_update = true;
+//                self->delayed_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::seconds(1),update_truck_numbers_atom_v,self->state.tqPlatoon);
+//                
+//            }
             std::cout << "[MASTER "+ self->state.getName() +"]: Platoon after decreasing by a certain amount is : "<<self->state.tqPlatoon<<"\n";
             
         },
@@ -662,6 +693,7 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
                 self->state.setPreviousPort(port);
                 auto im = self->home_system().middleman().spawn_client(TruckMasterClient, self->state.getPreviousHost(), self->state.getPreviousPort(), self);
                 if (!im) {
+            
                     std::cerr << "failed to spawn "<< self->state.getName() << "'s client: " << to_string(im.error()) <<"\n"<< std::endl;
                 }
             }
@@ -678,7 +710,7 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
         [=](count_trucks_atom, std::pair<uint32_t, uint32_t> pStopIdCount) {
             if (pStopIdCount.first == self->state.getId()) {
                 std::cout << "[MASTER "+self->state.getName()+"]:"+" STOPPED counting "<< std::endl;
-                self->state.initiate_update = false;
+                self->state.initiate_update = true;
                 self->state.tqPlatoon = pStopIdCount.second;
                 self->send(self,update_truck_numbers_atom_v,self->state.tqPlatoon);
             }else{
@@ -698,8 +730,6 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
         [=](count_trucks_atom) {
             self->send(caf::actor_cast<caf::actor>(self->state.client), count_trucks_atom_v,
                        std::make_pair(uint32_t(self->state.getId()), uint32_t(1)) );
-            self->state.initiate_update = true;
-//            std::cout << "WORKS";
         },
         
         ///Save the address of the current sender as client
@@ -718,10 +748,13 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
         ///@return
         ///none
         [=](truck_left_or_dead_atom) {
+            if(self->state.tqPlatoon >1){
             auto im = self->home_system().middleman().spawn_client(TruckMasterClient, self->state.getBackUpHost(), self->state.getBackUpPort(), self);
             if(!im)
                 std::cerr << "failed to spawn "<< self->state.getName() << "'s client: " << to_string(im.error()) <<"\n"<< std::endl;
             self->send_exit(caf::actor_cast<caf::actor>(self->current_sender()), caf::exit_reason::remote_link_unreachable);
+            }
+            
         },
         
         ///THis is a placeholder and does nothing
@@ -781,10 +814,62 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
                 self->delayed_send(caf::actor_cast<caf::actor>(self->state.server), std::chrono::milliseconds(10), update_port_host_previous_atom_v);
                 self->state.ph_count = 0;
             }
-            
-        
-            
         },
+        
+        ///set the speed of the truck
+        ///@param[in]
+        ///the spead as float
+        ///@return
+        /// none
+        [=](set_speed_atom, float speed) {
+            self->state.setSpeed(speed);
+            std::cout << "[MASTER"+self->state.getName()+"] new speed: " + std::to_string(self->state.getSpeed()) +"\n";
+        },
+        
+        ///returns the speed of the truck
+        ///@return
+        ///  A FLOAT
+        [=](get_speed_atom) {
+            return self->state.getSpeed();
+        },
+        ///returns the speed of the truck
+        ///@return
+        ///  A FLOAT
+        [=](should_master_count_atom) {
+            if (self->state.tqPlatoon == 2) {
+                self->send(self, count_trucks_atom_v);
+            }
+        },
+        
+        ///Receives the commands from the client and interprets them. It also sends the command to the truck behind
+        ///@param[in]
+        ///int32_t command -  the command that needs to be followed
+        ///@return
+        ///none
+        [=](get_new_command, uint32_t command) {
+            
+            switch (static_cast<commands>(command)) {
+                case commands::stop:
+                    self->state.setSpeed(0);
+                    std::cout << self->state.getName()+" stops: " + std::to_string(self->state.getSpeed()) +"\n";
+                    break;
+                case commands::start:
+                    self->state.setSpeed(100);
+                    std::cout << self->state.getName()+" starts: " + std::to_string(self->state.getSpeed()) +" \n";
+                    break;
+                case commands::accellerate:
+                    self->state.setSpeed(self->state.getSpeed()+10);
+                    std::cout << self->state.getName()+" accellerates: " + std::to_string(self->state.getSpeed()) +" \n";
+                    break;
+                case commands::decellerate:
+                    self->state.setSpeed(self->state.getSpeed()-10);
+                    std::cout << self->state.getName()+" decellerates: " + std::to_string(self->state.getSpeed()) +" \n" ;
+                    break;
+                default:
+                    break;
+            }
+        },
+        
     };
 }
 
