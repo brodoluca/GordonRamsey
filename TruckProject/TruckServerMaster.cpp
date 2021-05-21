@@ -194,6 +194,9 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
                         self->send(buddy, update_truck_numbers_atom_v,val);
                         break;
                         
+                        
+                        ///Used when we connect to a truck and the platoon size is 2
+                        ///The master connects to this one to close the ring
                     case operations::master_connect_to_last_truck:
                         //                    copy the buffer into a char buffer.
                         while (strlen(cstr) < temp+3) {

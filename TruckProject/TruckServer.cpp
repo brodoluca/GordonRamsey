@@ -131,9 +131,7 @@ caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl,
                           self->flush(hdl);
                       });
                       break;
-                      
-                  
-                      
+                    
                   case operations::master:
                         write_int(self, hdl, static_cast<uint8_t>(operations::master));
                         write_int(self, hdl, int32_t(0));
@@ -145,6 +143,8 @@ caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl,
                         write_int(self, hdl, int32_t(0));
                         self->flush(hdl);
                       break;
+                      
+                      
                   case operations::update_number_trucks:
                       self->send(buddy, update_truck_numbers_atom_v, val);
                       break;
@@ -152,6 +152,8 @@ caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl,
                   case operations::decrease_number_trucks:
                       self->send(buddy, decrease_number_trucks_atom_v);
                       break;
+                      
+                      
                   case operations::count_trucks:
                       ++rd_pos;
                       ++rd_pos;

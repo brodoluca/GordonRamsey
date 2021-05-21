@@ -40,7 +40,10 @@ public:
     ///keeps truck of the platoon size
     truck_quantity tqPlatoon = 1;
     
+    ///Thos should be inside the union, but for some reasons, if I do, the code wont compile
+    ///im pretty sure this is due to the fact that I initialize them here
     
+    ///if the truck is the one initializing the update of the platoon size
     bool initiate_update = false;
     ///0 for no switcheroo (basic state)
     ///1 for started switcheroo
@@ -50,6 +53,7 @@ public:
     bool initiate_port_host_update;
     union{
         bool initiate_backup_update;
+        ///if during the election, we have been traversed already
         bool traversed_election;
         int ph_count;
     };

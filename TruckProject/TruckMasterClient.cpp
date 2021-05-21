@@ -7,18 +7,21 @@
 
 #include "Truck.hpp"
 
+///This is the special client that the master should use.
+///This client is a stripped down version of the other one
 
 caf::behavior TruckMasterClient(caf::io::broker *self, caf::io::connection_handle hdl, const caf::actor& buddy){
     ///buddy is the truck actor. this function tells him to set this one as client
     self->send(buddy, set_client_atom_v);
     ///THIS IS FOR DEBUG PURPOSES
     ///pings the server to check if it works
-    self->delayed_send(self, std::chrono::seconds(3), try_luca_atom_v);
+//    self->delayed_send(self, std::chrono::seconds(3), try_luca_atom_v);
     
     ///defines how much we want to read from the buffer
     self->configure_read(hdl, caf::io::receive_policy::at_most(sizeof(uint8_t)+sizeof(uint32_t)+sizeof(char)*21));
 
     return{
+        
         ///THIS IS FOR DEBUG PURPOSES
         ///pings the server to check if it works
         [=](try_luca_atom){

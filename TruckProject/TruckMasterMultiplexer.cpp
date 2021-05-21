@@ -12,7 +12,6 @@
 ///We can store the ip address of the truck behind and tell them to connect to it. However, we also need to modify how the TruckServer handles new connections.
 ///This can be done later once the main features are terminated. 
 
-
 caf::behavior TruckMasterMultiplexer(caf::io::broker *self, caf::io::connection_handle hdl, const caf::actor& buddy){
     
     self->monitor(buddy);

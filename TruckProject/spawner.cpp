@@ -2,6 +2,10 @@
 
 #include "Truck.hpp"
 
+
+
+
+
 caf::actor spawnNewTruck(caf::actor_system& system,std::string name, std::string host , uint16_t port, uint16_t own_port){
     auto truck_actor = system.spawn(truck);
     auto server_actor = system.middleman().spawn_client(TruckClient, host, port,truck_actor);

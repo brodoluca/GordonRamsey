@@ -78,6 +78,9 @@ CAF_ADD_TYPE_ID(truck_block, (std::pair<uint32_t, uint32_t>))
 
 CAF_END_TYPE_ID_BLOCK(truck_block)
 
+
+
+///Inspectors required by caf for communicating using user defined data types
 template <class Inspector>
 bool inspect(Inspector& f, std::pair<int32_t, std::string>& x) {
     return f.object(x).fields(f.field("int32_t", x.first), f.field("string", x.second));

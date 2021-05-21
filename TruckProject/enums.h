@@ -37,7 +37,9 @@ enum class operations : uint8_t {
     set_speed,
     election_in_progress
 };
-///These are the commands a truck can interprates. 
+
+
+///These are the commands a truck can interprate. 
 enum class commands : uint32_t{
     stop,
     accellerate,
