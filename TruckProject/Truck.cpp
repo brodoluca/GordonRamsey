@@ -158,7 +158,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
             self->state.setSpeed(speed);
             std::cout << "["+self->state.getName()+"] new speed: " + std::to_string(self->state.getSpeed()) +"\n";
         },
-        
+
         
         ///Assigns a new id to the truck and updates back by subtracting one. in addition, asks to the client if its a master connection
         ///@param[in]
@@ -479,7 +479,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         ///@return
         ///none
         [=](start_election_token) {
-            if(self->state.tqPlatoon > 1){
+            if(self->state.tqPlatoon > 2){
                 self->delayed_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(50),election_in_progress_token_v, uint32_t(self->state.getId()));
                 self->state.traversed_election = true;
             }else{
@@ -519,13 +519,15 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
                 self->state.traversed_election = false;
                 std::cout << "[" +std::to_string(self->state.getId())+"]"+"ELECTIONS\n";
             }
-    
+
             ///If the ID is bigger, pass along my ID and keep going with the elections
             else if(electionID > self->state.getId() ){
                 self->state.traversed_election = true;
                 self->delayed_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(10), election_in_progress_token_v, uint32_t(self->state.getId()));
                 std::cout << "[" +std::to_string(self->state.getId())+"]"+"ELECTIONS\n";
             }
+            
+        
             ///If the ID is less , pass it to the next node and keep going with the elctions
             else if (electionID <= self->state.getId() ){
                 self->state.traversed_election = true;

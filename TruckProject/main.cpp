@@ -3,7 +3,6 @@
 
 #include "Truck.hpp"
 
-
 //DEFINE_SELECTION_PROCESS_RING
 
 
