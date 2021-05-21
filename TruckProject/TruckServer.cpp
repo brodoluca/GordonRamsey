@@ -1,7 +1,6 @@
 
 #include "Truck.hpp"
 
-
 ///Implementation of the server in the truck.
 ///Allows the trucks to communicate with each other. Every truck has one, regardless if it'S a master or not.
 ///The truck behind this one will connect to this server and they will communicate with this channel.
@@ -32,7 +31,7 @@ caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl,
             self->delayed_send(buddy, std::chrono::seconds(1), count_trucks_atom_v);
         }
     });
-    
+
     
     ///Sends to the buddy to save the pointer to the server
     self->send(buddy, set_server_atom_v);
@@ -61,7 +60,6 @@ caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl,
                     if(size != 1){
                         self->send(buddy, decrease_number_trucks_atom_v, truck_quantity(1));
                     }
-                    
                 
                 });
             
@@ -71,6 +69,16 @@ caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl,
             self->become(temp_server(self, std::move(buddy)));
 //            self->delayed_send(self, std::chrono::seconds(TIME_FOR_RECONNECTION), somebody_connected_atom_v);
         },
+        
+        ///When an election takes place, this sends back to the client the token
+        [=](election_in_progress_token, uint32_t ID) {
+            write_int(self, hdl, static_cast<uint8_t>(operations::election_in_progress));
+            write_int(self, hdl, ID);
+            self->flush(hdl);
+            std::cout << "[SERVER]: Start elections" << std::endl;
+        },
+        
+        
         ///Updates the truck quantity by certain amount
         [=](update_truck_numbers_atom, truck_quantity q) {
           write_int(self, hdl, static_cast<uint8_t>(operations::update_number_trucks_from_client));

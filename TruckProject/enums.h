@@ -34,7 +34,8 @@ enum class operations : uint8_t {
     decrease_number_trucks,
     count_trucks,
     update_master_previous_host_port,
-    set_speed
+    set_speed,
+    election_in_progress
 };
 ///These are the commands a truck can interprates. 
 enum class commands : uint32_t{

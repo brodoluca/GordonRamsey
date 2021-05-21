@@ -2,7 +2,6 @@
 #include "Truck.hpp"
 
 
-
 ///This file contains the implementation of the client.
 ///This behavior encapsulates a broker that handles the connection to a server, namely the truck in front.
 caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl, const caf::actor& buddy){
@@ -29,13 +28,28 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
                 [=](bool res){
                         if(res){
                             std::cout << "[TRUCK]: Connection to master closed" << std::endl;
-                           
+
+                            int selection_process = RING;
                             
-                            self->send(buddy, decrease_number_trucks_atom_v);
-                            self->send(buddy, become_master_atom_v);
-                            self->delayed_send(buddy,std::chrono::milliseconds(10), count_trucks_atom_v);
-                            self->quit(caf::exit_reason::remote_link_unreachable);
-                            self->delayed_send(buddy, std::chrono::milliseconds(10),truck_left_or_dead_atom_v);
+                            switch (selection_process) {
+                                case RING:
+                                    self->send(buddy, start_election_token_v);
+                                    self->send(buddy, decrease_number_trucks_atom_v);
+                                    self->delayed_send(buddy,std::chrono::milliseconds(10), count_trucks_atom_v);
+                                    self->quit(caf::exit_reason::remote_link_unreachable);
+                                    self->delayed_send(buddy, std::chrono::milliseconds(10),truck_left_or_dead_atom_v);
+                                    break;
+                                case NORMAL:
+                                    self->send(buddy, decrease_number_trucks_atom_v);
+                                    self->send(buddy, become_master_atom_v);
+                                    self->delayed_send(buddy,std::chrono::milliseconds(10), count_trucks_atom_v);
+                                    self->quit(caf::exit_reason::remote_link_unreachable);
+                                    self->delayed_send(buddy, std::chrono::milliseconds(10),truck_left_or_dead_atom_v);
+                                default:
+                                    break;
+                            }
+                            
+                            
                             
                             
                         }else{
@@ -57,7 +71,12 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
             self->flush(hdl);
         
         },
-
+        ///This happens only in case of an election. The truck sends to the client to become a MasterClient
+        [=](become_master_atom) {
+            self->fork(TruckMasterClient, hdl, std::move(buddy));
+            self->quit();
+        },
+        
     
         ///Close  the connection with the handle and dies, no response.
         [=](close_connection_atom) {
@@ -201,9 +220,7 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
                 case operations::update_port_host_back_up:
 //                    copy the buffer into a char buffer.
                     while (strlen(cstr) < temp+3) memcpy(&cstr, ++rd_pos, sizeof(char)*(temp+3));
-                    
                     factorHostPort(ip, cstr);
-
                     self->send(buddy, update_back_up_atom_v, temp_port, ip );
                     break;
                     
@@ -211,6 +228,12 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
                 case operations::initialiaze_truck_platoon:
                     self->send(buddy, increment_number_trucks_atom_v, uint32_t(val));
                     break;
+                    
+                    ///When an election is in progress, this sends the token to the truck
+                case operations::election_in_progress:
+                    self->send(buddy, election_in_progress_token_v, uint32_t(val));
+                    break;
+                    
                     ///Updates the platoon size
                 case operations::update_number_trucks_from_client:
                     self->send(buddy, update_truck_numbers_atom_v,val);

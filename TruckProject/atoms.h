@@ -67,6 +67,12 @@ CAF_ADD_ATOM(truck_block, available_to_count);
 CAF_ADD_ATOM(truck_block, get_speed_atom);
 CAF_ADD_ATOM(truck_block, set_speed_atom);
 CAF_ADD_ATOM(truck_block, should_master_count_atom);
+
+CAF_ADD_ATOM(truck_block, start_election_token);
+CAF_ADD_ATOM(truck_block, election_in_progress_token)
+
+
+
 CAF_ADD_TYPE_ID(truck_block, (std::pair<int32_t, std::string>) )
 CAF_ADD_TYPE_ID(truck_block, (std::pair<uint32_t, uint32_t>))
 

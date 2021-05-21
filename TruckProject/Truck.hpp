@@ -9,12 +9,17 @@
 #include "string.h"
 #include <cstdint>
 #include <iomanip>
+#include <stdlib.h>
+#include <time.h>
+
 
 #include "caf/all.hpp"
 #include "caf/io/all.hpp"
 
 #include "InputMonitor.hpp"
 #include "utils.h"
+
+
 
 
 ///  To have a better idea of how this works, check our github
@@ -45,10 +50,10 @@ public:
     bool initiate_port_host_update;
     union{
         bool initiate_backup_update;
-        
+        bool traversed_election;
         int ph_count;
     };
-    
+
     ///stores all the actors handling different connections
     std::vector<caf::actor> vConnectionMultiplexer;//WIP
 public:
@@ -64,6 +69,7 @@ public:
     uint16_t getPreviousPort();
     std::string getBackUpHost();
     uint16_t getBackUpPort();
+    uint32_t getProcessID();
     
     void setMasterConnection(bool res);
     void setName(std::string name);
@@ -76,6 +82,7 @@ public:
     void setPreviousPort(uint16_t port);
     void setBackUpHost(std::string host);
     void setBackUpPort(uint16_t port);
+    void setProcessId(uint32_t processID);
 private:
     ///name of the truck
     std::string sName_ = "Name";
@@ -101,6 +108,8 @@ private:
     std::string sBackUpHost_ = "";
     ///We store if we are connected directly to the master
     bool bMasterConnection; //are we connected to the master directly?
+    ///
+    uint32_t processID_;
     
 };
 

@@ -1,9 +1,11 @@
 
 
 #include "Truck.hpp"
+
 caf::actor spawnNewTruck(caf::actor_system& system,std::string name, std::string host , uint16_t port, uint16_t own_port){
     auto truck_actor = system.spawn(truck);
     auto server_actor = system.middleman().spawn_client(TruckClient, host, port,truck_actor);
+    std::srand(std::time(nullptr));
     caf::scoped_actor self{system};
     try {
         if (!server_actor) {
@@ -28,6 +30,7 @@ caf::actor spawnNewTruck(caf::actor_system& system,std::string name, std::string
 
 caf::actor spawnNewMaster(caf::actor_system& system,std::string name, std::string host , uint16_t port){
     auto truck_actor = system.spawn(truck);
+    std::srand(std::time(nullptr)); 
     caf::scoped_actor self{system};
     auto server_actor = system.middleman().spawn_server(temp_master_server,port, truck_actor);
     try {

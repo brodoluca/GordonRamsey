@@ -1,5 +1,7 @@
 #include "Truck.hpp"
 
+
+
 ///This file contains the implementation of the two actors which acts as actor and master
 ///all the clients, servers and so on pass through these to do every action.
 ///They also store save the state of the trucks, so speed, name bla bla (check the struck for more infos)
@@ -15,6 +17,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         ///@param[in]
         /// name - name of the actor
         [=](initialize_atom,std::string name) {
+            self->state.setProcessId(RANDOM_PROCESS_ID);
             self->state.setName(name);
             std::cout<<self->state.getName() + " has been spawned \n";
         },
@@ -25,6 +28,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         /// name - name of the actor
         ///     port - port thanks to which we can spawn the server
         [=](initialize_atom,std::string name, uint16_t port) {
+            self->state.setProcessId(RANDOM_PROCESS_ID);
             self->state.setName(name);
             std::cout<<self->state.getName() + " has been spawned \n";
             self->state.client = self->current_sender();
@@ -155,6 +159,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
             std::cout << "["+self->state.getName()+"] new speed: " + std::to_string(self->state.getSpeed()) +"\n";
         },
         
+        
         ///Assigns a new id to the truck and updates back by subtracting one. in addition, asks to the client if its a master connection
         ///@param[in]
         ///the id as a int32_t
@@ -163,7 +168,9 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         [=](get_new_id_atom, int32_t newID) {
             self->state.setId(newID);
             self->send(caf::actor_cast<caf::actor>(self->current_sender()), is_master_atom_v);
-            self->send(caf::actor_cast<caf::actor>(self->state.server), update_id_cascade_v, int32_t(self->state.getId()-1));
+            
+            if(self->state.traversed_election == false)
+                self->send(caf::actor_cast<caf::actor>(self->state.server), update_id_cascade_v, int32_t(self->state.getId()-1));
         },
     
         ///Us'ed to save the type of conneciton.
@@ -356,12 +363,19 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         ///@return
         ///none
         [=](update_port_host_previous_atom, uint16_t port, std::string host){
-            self->state.setPreviousHost(host);
-            self->state.setPreviousPort(port);
-            std::cout << "["+ self->state.getName() + "]: " +" Previous truck updated :" << self->state.getPreviousHost() << ", port: " << self->state.getPreviousPort() << std::endl ;
-        
-//            self->send(caf::actor_cast<caf::actor>(self->state.server), update_back_up_atom_v);
-            self->delayed_send(caf::actor_cast<caf::actor>(self->state.server), std::chrono::milliseconds(10), update_port_host_previous_atom_v);
+            if (self->state.getPreviousHost() == host && self->state.getPreviousPort() == port) {
+                
+                std::cout << "[ "+ self->state.getName() + "]: " +" No need to update the previous truck"  << std::endl ;
+                if(self->state.ph_count==1)
+                    self->delayed_send(caf::actor_cast<caf::actor>(self->state.server), std::chrono::milliseconds(10), update_port_host_previous_atom_v);
+                self->state.ph_count=2;
+            }else{
+                self->state.setPreviousHost(host);
+                self->state.setPreviousPort(port);
+                std::cout << "[ "+ self->state.getName() +"]: " +" Previous truck updated :" << self->state.getPreviousHost() << ", port: " << self->state.getPreviousPort() << std::endl ;
+                self->delayed_send(caf::actor_cast<caf::actor>(self->state.server), std::chrono::milliseconds(10), update_port_host_previous_atom_v);
+                self->state.ph_count = 0;
+            }
         },
         
         ///Updates the port and host of theback up truck
@@ -371,10 +385,20 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         ///@return
         ///none
         [=](update_back_up_atom, uint16_t port, std::string host){
-            self->state.setBackUpHost(host);
-            self->state.setBackUpPort(port);
-            std::cout << "["+ self->state.getName() + "]: " +" BackUp truck updated :" << self->state.getBackUpHost() << "-" << self->state.getBackUpPort() << std::endl ;
-            self->send(caf::actor_cast<caf::actor>(self->state.server), update_back_up_atom_v);
+            if (self->state.getBackUpHost() == host && self->state.getBackUpPort() == port) {
+                
+                std::cout << "[ "+ self->state.getName() + "]: " +" No need to update the back up truck"  << std::endl ;
+                if (self->state.ph_count == 2 ) {
+                    self->state.ph_count = 1;
+                    self->send(caf::actor_cast<caf::actor>(self->state.server), update_back_up_atom_v);
+                }
+                self->state.ph_count=3;
+            }else{
+                self->state.setBackUpHost(host);
+                self->state.setBackUpPort(port);
+                std::cout << "[ "+ self->state.getName() + "]: " +" BackUp truck updated :" << self->state.getBackUpHost() << "-" << self->state.getBackUpPort() << std::endl ;
+                self->send(caf::actor_cast<caf::actor>(self->state.server), update_back_up_atom_v);
+            }
         },
         
         ///When the truck in front leaves or dies we connect to the truck in front of us and we kill the other client.
@@ -449,6 +473,68 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
             self->state.client = self->current_sender();
         },
         
+        ///The master is dead and we start a new election
+        ///@param[in]
+        ///none
+        ///@return
+        ///none
+        [=](start_election_token) {
+            if(self->state.tqPlatoon > 1){
+                self->delayed_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(50),election_in_progress_token_v, uint32_t(self->state.getId()));
+                self->state.traversed_election = true;
+            }else{
+                self->send(self,become_master_atom_v);
+                self->send(caf::actor_cast<caf::actor>(self->state.client), become_master_atom_v);
+            }
+            
+            
+            
+            
+            ///@todo if statement. If the platoon is one, skip the election and become directly the master
+            
+            
+            
+        },
+    
+        ///This is the most important part in the election.
+        ///Here the truck decides whether he's the master of if
+        ///@param[in]
+        ///electionID -> id of the starter
+        ///@return
+        ///none
+        [=](election_in_progress_token, uint32_t electionID) {
+            
+            ///if the ID is equal to mine and I have been traversed, the election is done since Im the one with the biggest ID
+            if(electionID == self->state.getId() && self->state.traversed_election){
+                ///become master
+                std::cout << "[" +std::to_string(self->state.getId())+"]"+"THE ELECTION IS DONE AND I SHOULD BE THE MASTER\n";
+                self->state.traversed_election = false;
+                self->send(self, become_master_atom_v);
+                self->send(caf::actor_cast<caf::actor>(self->state.client), become_master_atom_v);
+            }
+            ///if I have been traversed already and my id is different,  means that the election is at the end state.
+            ///Therefore we only pass it along and hope that it will reach the truck with the Id I received.
+            else if(electionID != self->state.getId() && self->state.traversed_election){
+                self->delayed_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(10), election_in_progress_token_v, electionID);
+                self->state.traversed_election = false;
+                std::cout << "[" +std::to_string(self->state.getId())+"]"+"ELECTIONS\n";
+            }
+    
+            ///If the ID is bigger, pass along my ID and keep going with the elections
+            else if(electionID > self->state.getId() ){
+                self->state.traversed_election = true;
+                self->delayed_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(10), election_in_progress_token_v, uint32_t(self->state.getId()));
+                std::cout << "[" +std::to_string(self->state.getId())+"]"+"ELECTIONS\n";
+            }
+            ///If the ID is less , pass it to the next node and keep going with the elctions
+            else if (electionID <= self->state.getId() ){
+                self->state.traversed_election = true;
+                self->delayed_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(10), election_in_progress_token_v, uint32_t(self->state.getId()));
+                std::cout << "[" +std::to_string(self->state.getId())+"]"+"ELECTIONS\n";
+            }
+        },
+        
+    
         /*---------------------------USELESS --------------------*/
         
         [=](cascade_port_host_atom, uint16_t newPort, std::string newHost, truck_quantity stopID) {
@@ -785,10 +871,6 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
                 std::cout << "[MASTER "+ self->state.getName() + "]: " +" BackUp truck updated :" << self->state.getBackUpHost() << "-" << self->state.getBackUpPort() << std::endl ;
                 self->send(caf::actor_cast<caf::actor>(self->state.server), update_back_up_atom_v);
             }
-            
-                       
-            
-            
         },
         
         
@@ -930,6 +1012,9 @@ std::string Truck::getBackUpHost(){
 uint16_t Truck::getBackUpPort(){
     return uBackUpPort;
 }
+uint32_t Truck::getProcessID(){
+    return processID_;
+}
 
 
 ///
@@ -937,7 +1022,7 @@ uint16_t Truck::getBackUpPort(){
 ///
 
 void Truck::setName(std::string name){
-    sName_ = std::move(name);
+    sName_ = std::move(name) + "-"+ std::to_string(processID_);
 };
 void Truck::setId(int32_t id){
     iId_ = id;
@@ -974,4 +1059,6 @@ void Truck::setBackUpHost(std::string host){
 void Truck::setBackUpPort(uint16_t port){
     uBackUpPort = port;
 }
-
+void Truck::setProcessId(uint32_t processID){
+    processID_ = processID;
+}

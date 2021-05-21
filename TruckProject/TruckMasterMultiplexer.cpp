@@ -1,6 +1,7 @@
 
 #include "Truck.hpp"
 
+
 ///WIP of a new way of thinking at the platoon
 ///instead of using linked-lists as a base data structure,  a tree might be more flexible
 ///However, the three presents more challanges

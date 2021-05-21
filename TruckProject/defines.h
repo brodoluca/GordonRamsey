@@ -5,6 +5,14 @@
 //  Created by Luca on 10/05/21.
 //
 
+
+
+
+
+
+
+
+
 #ifndef defines_h
 #define defines_h
 
@@ -23,6 +31,16 @@
 #define TIME_FOR_RECONNECTION 1
 ///This is bullshit
 #define SERVER_PORT 3232
+
+
+
+#define RING 1
+#define NORMAL 2
+
+#define RANDOM_PROCESS_ID uint32_t(std::rand()/((RAND_MAX + 1u)/ MAX_TRUCKS))
+
+
+
 
 ///THis is just convenience, you can change this depending on the size of the platoon
 using truck_quantity = int32_t;

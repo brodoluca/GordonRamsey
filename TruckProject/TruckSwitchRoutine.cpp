@@ -7,6 +7,7 @@
 
 #include "Truck.hpp"
 
+
 ///This behavior here has the purpose of switching the position of the trucks
 ///Basically, when there is a truck that wants to connect to another one, but this one already has a conenction,
 ///it will switch position with the truck asking to enter, and then connect to that one.
