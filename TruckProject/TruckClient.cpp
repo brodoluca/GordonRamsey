@@ -18,7 +18,7 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
     ///defines how much we want to read from the buffer
     self->configure_read(hdl, caf::io::receive_policy::at_most(sizeof(uint8_t)+sizeof(uint32_t)+sizeof(char)*21));
     return {
-        
+    
         ///Handles a closed connection.
         ///If it's a master connection this becomes the master
         ///Otherwise tries to use the backup connection
@@ -80,13 +80,13 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
     
         ///Close  the connection with the handle and dies, no response.
         [=](close_connection_atom) {
-            std::cout << "[CLIENT]:Connection closed.";
+//            std::cout << "[CLIENT]:Connection closed.";
             self->close(hdl);
             self->quit();
         },
         
         [=](master_connect_to_my_server_atom) {
-            std::cout << "[CLIENT]:Master should connect to me.\n";
+//            std::cout << "[CLIENT]:Master should connect to me.\n";
             self->request(buddy, std::chrono::seconds(2), get_host_port_atom_v).then(
                     [=](std::pair<int32_t, std::string> pPortHost){
                             std::string Host = "ciao";
@@ -167,13 +167,13 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
                     break;
                     ///Assigns new id
                 case operations::get_id:
-                std::cout << "[CLIENT]: Received new ID: "<<val << std::endl;
+//                std::cout << "[CLIENT]: Received new ID: "<<val << std::endl;
                     self->send(buddy, get_new_id_atom_v, int32_t(val));
                     break;
                     ///Receives whether is a master connection or not
                 case operations::master:
                     self->anon_send(buddy, set_master_connection_atom_v, bool(val));
-                    std::cout << "[CLIENT] :master connection : "  << bool(val) << "\n";
+//                    std::cout << "[CLIENT] :master connection : "  << bool(val) << "\n";
                     break;
                 case operations::set_speed:
                     self->anon_send(buddy, set_speed_atom_v, static_cast<float>(val));
@@ -184,7 +184,7 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
                     break;
                     ///Sends the command to the truck
                 case operations::command:
-                    std::cout << "[CLIENT]: Received new command" << std::endl;
+//                    std::cout << "[CLIENT]: Received new command" << std::endl;
                     self->send(buddy, get_new_command_v, int32_t(val));
                     break;
                     ///Sends port and host
@@ -249,7 +249,7 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
                 
                     ///Request for my own port and hsot
                 case operations::request_for_host_port:
-                    std::cout << "[CLIENT]: Im giving you my port and host"<<std::endl;
+//                    std::cout << "[CLIENT]: Im giving you my port and host"<<std::endl;
                     self->request(buddy, std::chrono::seconds(1), get_host_port_atom_v).then([=](std::pair<int32_t, std::string> pPortHost) mutable {
                         std::string Host = "ciao";
                         char temp[20] = {'\0'};

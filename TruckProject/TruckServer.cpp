@@ -75,7 +75,6 @@ caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl,
             write_int(self, hdl, static_cast<uint8_t>(operations::election_in_progress));
             write_int(self, hdl, ID);
             self->flush(hdl);
-            std::cout << "[SERVER]: Start elections" << std::endl;
         },
         
         
@@ -199,7 +198,7 @@ caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl,
                       });
                       break;
                 default:
-                      std::cout << "invalid No for op_val, stop" << std::endl;
+                      std::cout << "[SERVER]:invalid No for op_val, stop" << std::endl;
                       break;
           };
         },
@@ -258,11 +257,11 @@ caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl,
         
     
         [=](const caf::io::new_connection_msg& msg) {
-            std::cout << "[SERVER]: AIA, A-NEW CONECTION" << std::endl;
+            std::cout << "[SERVER]:new connection accepted" << std::endl;
             self->request(buddy, std::chrono::seconds(2), get_truck_numbers_atom_v).await(
                 [=](truck_quantity number_trucks)  {
                     if(number_trucks<=MAX_TRUCKS){
-                        std::cout << "[SERVER]: Fork to the routine and send the new truck to update it's coordinate" << std::endl;
+                        std::cout << "[SERVER]: Fork to the routine and send the new truck to update its coordinate" << std::endl;
                         auto switcheroo = self->fork(TruckSwitchRoutine, msg.handle, std::move(buddy));
                         self->send(buddy, set_switcheroo_atom_v, 0);
                         self->send(switcheroo,update_port_host_previous_atom_v);
@@ -294,7 +293,7 @@ caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl,
 ///Temporary server to allow the truck behind to connect to this truck
 ///This actor will die as soon as a connection is created.
 caf::behavior temp_server(caf::io::broker *self,const caf::actor& buddy){
-    std::cout << "[SERVER]: SPAWNED" << std::endl;
+//    std::cout << "[SERVER]: SPAWNED" << std::endl;
     
     self->request(buddy, std::chrono::milliseconds(500), get_port_atom_v).then(
         [=](uint16_t port) {

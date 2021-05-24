@@ -27,7 +27,7 @@ caf::behavior TruckSwitchRoutine(caf::io::broker *self, caf::io::connection_hand
         ///When the conenction is closed, we quit and
         /// send this to buddy and tell him to do the old switcherooo(create a new client with previousHost and previous Port)
         [=](const caf::io::connection_closed_msg& msg){
-            std::cout << "[TRUCK_SWITCH_ROUTINE]: It's time for the good old switcheroo"<<std::endl;
+//            std::cout << "[TRUCK_SWITCH_ROUTINE]: It's time for the good old switcheroo"<<std::endl;
             self->delayed_send(buddy, std::chrono::seconds(1),create_new_client_connection_previous_hostport_atom_v);
             self->quit(caf::sec::redundant_connection);
         },
@@ -36,7 +36,7 @@ caf::behavior TruckSwitchRoutine(caf::io::broker *self, caf::io::connection_hand
         ///These allow the new truck to connect with the truck in front
         /// Necessary for the old switcheroo
         [=](update_port_host_previous_atom){
-            std::cout << "[TRUCK_SWITCH_ROUTINE]: It's time to update the coordinates"<<std::endl;
+//            std::cout << "[TRUCK_SWITCH_ROUTINE]: It's time to update the coordinates"<<std::endl;
             std::string Host = "ciao";
             char temp[20] = {'\0'};
             uint32_t message = 0;
@@ -60,7 +60,7 @@ caf::behavior TruckSwitchRoutine(caf::io::broker *self, caf::io::connection_hand
         
         /// send request for his port and host
         [=](request_for_port_host_atom){
-            std::cout << "[TRUCK_SWITCH_ROUTINE]: Can I have your coordinates please?"<<std::endl;
+//            std::cout << "[TRUCK_SWITCH_ROUTINE]: Can I have your coordinates please?"<<std::endl;
             write_int(self, hdl, static_cast<uint8_t>(operations::request_for_host_port));
             self->flush(hdl);
         },
@@ -111,7 +111,7 @@ caf::behavior TruckSwitchRoutine(caf::io::broker *self, caf::io::connection_hand
                     ip.pop_back();
                     tqStopId =atoi(cstr);
                     while(ip.back() == '-') ip.pop_back();
-                    std::cout << "[TRUCK_SWITCH_ROUTINE]: I possess your data"<<std::endl;
+//                    std::cout << "[TRUCK_SWITCH_ROUTINE]: I possess your data"<<std::endl;
                     self->delayed_send(buddy, std::chrono::milliseconds(10), update_port_host_previous_atom_v, temp_port, ip );
                     self->delayed_send(buddy,std::chrono::milliseconds(100),close_client_connection_atom_v);
                     break;

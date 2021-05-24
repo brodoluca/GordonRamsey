@@ -42,7 +42,7 @@ caf::behavior TruckMasterClient(caf::io::broker *self, caf::io::connection_handl
         },
         ///for the time beings, does nothing.
         [=](const caf::io::connection_closed_msg& msg){
-            std::cout << "[MASTER_CLIENT]:Ah, stoppede connection aah" << std::endl;
+//            std::cout << "[MASTER_CLIENT]:Ah, stoppede connection aah" << std::endl;
         },
         
         [=](update_truck_numbers_atom, truck_quantity q) {

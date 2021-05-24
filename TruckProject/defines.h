@@ -43,12 +43,70 @@
 #define RING 1
 #define NORMAL 2
 
-#define RANDOM_PROCESS_ID uint32_t(std::rand()/((RAND_MAX + 1u)/ MAX_TRUCKS))
+#define RANDOM_PROCESS_ID uint32_t(std::rand()%MAX_TRUCKS+1)
 
 
 
 
 ///THis is just convenience, you can change this depending on the size of the platoon
 using truck_quantity = int32_t;
+
+
+
+
+constexpr char http_ok[] = "HTTP/1.1 200 OK\r\n"
+                           "Content-Type: text/plain\r\n"
+                           "Connection: close\r\n"
+                           "Transfer-Encoding: chunked\r\n"
+                           "\r\n"
+                           "d\r\n"
+                           "Hi there! :)\r\n"
+                           "\r\n"
+                           "0\r\n"
+                           "\r\n"
+                           "\r\n";
+
+
+constexpr const char HttpBeginning[]  ="HTTP/1.1 200 OK\r\n"
+"Content-Type: text/plain\r\n"
+"Transfer-Encoding: chunked\r\n"
+"Access-Control-Allow-Origin: *\r\n"
+;
+
+constexpr const char JsonStart[] = "1\r\n"
+                                   "{\r\n";
+constexpr const char JsonEnd[] = "1\r\n"
+                                 "}\r\n";
+
+constexpr const char HttpEnd[] ="0\r\n"
+                                "\r\n"
+                                "\r\n";
+
+constexpr const char* Fields[] = {"\"Name\":",
+                                "\"ID\":",
+"\"ProcessID\":",
+    "\"Speed\":"};
+
+constexpr const char Endline[] = {"\r\n"};
+
+constexpr const char a[] ="HTTP/1.1 200 OK\r\n"
+"Content-Type: text/plain\r\n"
+"Transfer-Encoding: chunked\r\n"
+"Access-Control-Allow-Origin: *\r\n"
+"\r\n"
+"1\r\n"
+"{\r\n"
+"18\r\n"
+"\"squadName\":\"CiaoWiktor\"\r\n"
+
+
+"1\r\n"
+"}\r\n"
+"0\r\n"
+"\r\n"
+"\r\n";
+
+
+
 
 #endif /* defines_h */

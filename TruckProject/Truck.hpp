@@ -6,11 +6,14 @@
 #include <string>
 #include <iostream>
 
-#include "string.h"
+
 #include <cstdint>
+#include <cstdlib>
 #include <iomanip>
 #include <stdlib.h>
 #include <time.h>
+
+#include "string.h"
 
 
 #include "caf/all.hpp"
@@ -51,10 +54,14 @@ public:
     int initiated_switcheroo = 0;
     
     bool initiate_port_host_update;
+    
+    ///if during the election, we have been traversed already
+    ///I need those to be initialized at compile time with the value I want. If i put them in the union with the others, I cant do that
+    ///And it will initialize them with junk. 
+    bool traversed_election = false;
     union{
         bool initiate_backup_update;
-        ///if during the election, we have been traversed already
-        bool traversed_election;
+        
         int ph_count;
     };
 
@@ -112,7 +119,8 @@ private:
     std::string sBackUpHost_ = "";
     ///We store if we are connected directly to the master
     bool bMasterConnection; //are we connected to the master directly?
-    ///
+    ///The process ID is the specific ID that the truck owns and it's decided randomnly. This is used to define which one will be the new master.
+    ///The other ID on the other hand, is used for the other operations
     uint32_t processID_;
     
 };
@@ -228,5 +236,21 @@ caf::behavior TruckSwitchRoutine(caf::io::broker *self, caf::io::connection_hand
 /// buddy - truck  which we are associated to
 caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl, const caf::actor& buddy);
 
+
+
+
+
+///Server used to communicate with the web interface
+///@param
+/// self - broker itself
+/// buddy - truck  which we are associated to
+caf::behavior server(caf::io::broker* self,const caf::actor & buddy);
+
+
+///Server used to communicate with the web interface
+///@param
+/// self - broker itself
+/// buddy - truck  which we are associated to
+caf::behavior connection_worker(caf::io::broker* self, caf::io::connection_handle hdl,const caf::actor & buddy);
 
 #endif /* Truck_hpp */

@@ -26,7 +26,7 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
     
 //    self->delayed_send(buddy, std::chrono::seconds(1), count_trucks_atom_v);
     ///Debugging reasons
-    std::cout << "[MASTER]: I have been spawned.Connections: "<<self->num_connections() << std::endl;
+//    std::cout << "[MASTER]: I have been spawned.Connections: "<<self->num_connections() << std::endl;
     ///To allow multiple connections, we create a doorman
     self->request(buddy, std::chrono::milliseconds(500), get_port_atom_v).then([=](uint16_t truckPort){auto a = self->add_tcp_doorman(truckPort);});
     ///defines how much we want to read from the buffer
@@ -350,7 +350,7 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
 ///We create a temp server before the connection to the main one
 ///We do this because it allows us to save the handler for the connection
 caf::behavior temp_master_server(caf::io::broker* self, const caf::actor& buddy) {
-  std::cout << "[TEMP_SERVER]: running" << std::endl;
+//  std::cout << "[TEMP_SERVER]: running" << std::endl;
   return {
       ///The temp server forks to the main one and dies afterwards
     [=](const caf::io::new_connection_msg& msg) {

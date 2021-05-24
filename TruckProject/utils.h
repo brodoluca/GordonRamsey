@@ -84,5 +84,9 @@ inline void factorHostPort(std::string &ip, char* cstr){
 
 
 
+template <size_t Size>
+constexpr size_t cstr_size(const char (&)[Size]) {
+  return Size;
+}
 
 #endif /* utils_h */
