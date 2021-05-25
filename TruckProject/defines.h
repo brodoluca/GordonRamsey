@@ -84,8 +84,14 @@ constexpr const char HttpEnd[] ="0\r\n"
 
 constexpr const char* Fields[] = {"\"Name\":",
                                 "\"ID\":",
-"\"ProcessID\":",
-    "\"Speed\":"};
+                                "\"ProcessID\":",
+                                "\"Speed\":",
+                                "\"PlatoonSize\":",
+                                "\"MasterConnection\":",
+                                "\"port\":",
+                                "\"ip\":",
+                                "\"master\":"
+};
 
 constexpr const char Endline[] = {"\r\n"};
 

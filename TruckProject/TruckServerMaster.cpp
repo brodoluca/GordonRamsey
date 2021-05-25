@@ -70,7 +70,7 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
             [=](ask_for_input_atom){
                 auto input = self->home_system().spawn(InputMonitor);
                 self->send(input, 1);
-                self->delayed_send(self, std::chrono::seconds(10), ask_for_input_atom_v);
+                self->delayed_send(self, std::chrono::seconds(3), ask_for_input_atom_v);
             },
         ///initializes the truck platoon and adds one to ir
         ///it also sends to the truck connected the new platoon size

@@ -634,7 +634,43 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
             temp = "";
 
             temp += Fields[3];
-            temp += "\""+std::to_string(self->state.getSpeed())+"\""+Endline;
+            temp += "\""+std::to_string(self->state.getSpeed())+"\""+","+Endline;
+            ss<< std::hex << temp.size()-2;
+            output += ss.str()+ Endline + temp;
+            ss.str(std::string());
+            temp = "";
+            
+            temp += Fields[4];
+            temp += "\""+std::to_string(self->state.tqPlatoon)+"\""+","+Endline;
+            ss<< std::hex << temp.size()-2;
+            output += ss.str()+ Endline + temp;
+            ss.str(std::string());
+            temp = "";
+            
+            temp += Fields[5];
+            temp += "\""+std::to_string(self->state.isMasterConnection())+"\"" + "," +Endline;
+            ss<< std::hex << temp.size()-2;
+            output += ss.str()+ Endline + temp;
+            ss.str(std::string());
+            temp = "";
+            
+            temp += Fields[6];
+            temp += "\""+std::to_string(self->state.getPort())+"\""+ ","+Endline;
+            ss<< std::hex << temp.size()-2;
+            output += ss.str()+ Endline + temp;
+            ss.str(std::string());
+            temp = "";
+            
+            temp += Fields[7];
+            temp += "\""+self->state.getHost()+"\""+ ","+Endline;
+            ss<< std::hex << temp.size()-2;
+            output += ss.str()+ Endline + temp;
+            ss.str(std::string());
+            temp = "";
+            
+            temp += Fields[8];
+            temp += "\"false\"";
+            temp += Endline;
             ss<< std::hex << temp.size()-2;
             output += ss.str()+ Endline + temp;
             ss.str(std::string());
@@ -645,7 +681,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
 //            std::cout << strlen(output.c_str());
 //            std::cout << output;
 //            std::string b(json_out);
-            std::cout << output;
+//            std::cout << output;
             return output;
 //
         
@@ -1032,10 +1068,102 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
         ///@return
         ///none
         [=](prepare_json_message) {
-            char json_out[] = "";
-            strcat(json_out, JsonStart);
-            std::cout << std::string(json_out)<<"\n";
+            char json_out[] = "HTTP/1.1 200 OK\r\n"
+            "Content-Type: text/plain\r\n"
+            "Transfer-Encoding: chunked\r\n"
+            "Access-Control-Allow-Origin: *\r\n"
+            "\r\n"
+            "1\r\n"
+            "{\r\n"
+            ;
             
+            std::string output(json_out);
+            std::string temp("");
+
+
+            std::stringstream ss;
+             // int decimal_value
+//            std::string res ( ss.str() );
+//
+//            std::cout << res;
+////
+//
+            temp += Fields[0];
+            temp += "\""+self->state.getName()+"\""+","+Endline;
+            ss<< std::hex << temp.size()-2;
+            output += ss.str()+ +Endline + temp;
+            ss.str(std::string());
+            temp = "";
+//
+//
+//
+            temp += Fields[1];
+            temp += "\""+std::to_string(self->state.getId())+"\""+","+Endline;
+            ss<< std::hex << temp.size()-2;
+            output += ss.str()+ +Endline + temp;
+            ss.str(std::string());
+            temp = "";
+
+            temp += Fields[2];
+            temp += "\""+std::to_string(self->state.getProcessID())+"\""+","+Endline;
+            ss<< std::hex << temp.size()-2;
+            output += ss.str()+ +Endline + temp;
+            ss.str(std::string());
+            temp = "";
+
+            temp += Fields[3];
+            temp += "\""+std::to_string(self->state.getSpeed())+"\""+","+Endline;
+            ss<< std::hex << temp.size()-2;
+            output += ss.str()+ Endline + temp;
+            ss.str(std::string());
+            temp = "";
+            
+            temp += Fields[4];
+            temp += "\""+std::to_string(self->state.tqPlatoon)+"\""+","+Endline;
+            ss<< std::hex << temp.size()-2;
+            output += ss.str()+ Endline + temp;
+            ss.str(std::string());
+            temp = "";
+            
+            temp += Fields[5];
+            temp += "\""+std::to_string(self->state.isMasterConnection())+"\"" + "," +Endline;
+            ss<< std::hex << temp.size()-2;
+            output += ss.str()+ Endline + temp;
+            ss.str(std::string());
+            temp = "";
+            
+            temp += Fields[6];
+            temp += "\""+std::to_string(self->state.getPort())+"\""+ ","+Endline;
+            ss<< std::hex << temp.size()-2;
+            output += ss.str()+ Endline + temp;
+            ss.str(std::string());
+            temp = "";
+            
+            
+            temp += Fields[7];
+            temp += "\""+self->state.getHost()+"\""+ ","+Endline;
+            ss<< std::hex << temp.size()-2;
+            output += ss.str()+ Endline + temp;
+            ss.str(std::string());
+            temp = "";
+            
+            temp += Fields[8];
+            temp += "\"true\"";
+            temp += Endline;
+            ss<< std::hex << temp.size()-2;
+            output += ss.str()+ Endline + temp;
+            ss.str(std::string());
+            temp = "";
+            
+            output+= JsonEnd;
+            output += HttpEnd;
+//            std::cout << strlen(output.c_str());
+//            std::cout << output;
+//            std::string b(json_out);
+//            std::cout << output;
+            return output;
+//
+        
         }
         
     };

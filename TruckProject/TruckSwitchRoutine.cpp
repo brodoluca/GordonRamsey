@@ -38,6 +38,8 @@ caf::behavior TruckSwitchRoutine(caf::io::broker *self, caf::io::connection_hand
         [=](update_port_host_previous_atom){
 //            std::cout << "[TRUCK_SWITCH_ROUTINE]: It's time to update the coordinates"<<std::endl;
             std::string Host = "ciao";
+
+        
             char temp[20] = {'\0'};
             uint32_t message = 0;
             self->request(buddy, std::chrono::seconds(1), get_port_host_previous_atom_v).then([=](std::pair<int32_t, std::string> pPortHost) mutable {
