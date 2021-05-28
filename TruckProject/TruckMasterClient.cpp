@@ -76,6 +76,8 @@ caf::behavior TruckMasterClient(caf::io::broker *self, caf::io::connection_handl
 //                    copy the buffer into a char buffer.
                     while (strlen(cstr) < temp+3) memcpy(&cstr, ++rd_pos, sizeof(char)*(temp+3));
                     factorHostPort(ip, cstr);
+                    std::cout << "UPDATE_PREVIOUS:" << temp_port<<ip;
+                    
                     self->send(buddy, update_port_host_previous_atom_v, temp_port, ip );
                     break;
                     
@@ -88,6 +90,12 @@ caf::behavior TruckMasterClient(caf::io::broker *self, caf::io::connection_handl
                 case operations::set_speed:
                     std::cout << "[MASTER_CLIENT]:SPEED1" << std::endl;
                     self->anon_send(buddy, set_speed_atom_v, static_cast<float>(val));
+                    break;
+                case operations::reset_previous:
+                    self->send(buddy, reset_previous_v);
+                    break;
+                case operations::reset_back_up:
+                    self->send(buddy, reset_back_up_v);
                     break;
               default:
 //                    std::cout << "[MASTER_CLIENT]:invalid value for op_val, stop" << std::endl;

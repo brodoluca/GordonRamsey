@@ -35,7 +35,9 @@ enum class operations : uint8_t {
     count_trucks,
     update_master_previous_host_port,
     set_speed,
-    election_in_progress
+    election_in_progress,
+    reset_previous,
+    reset_back_up
 };
 
 

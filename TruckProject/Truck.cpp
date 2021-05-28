@@ -10,9 +10,12 @@
 caf::behavior truck(caf::stateful_actor<Truck>* self){
     //no op
     //initialization is done through a behavior
+    
+    
+    
+    
+    
     return{
-        
-        
         ///Initializes the actor with a name
         ///@param[in]
         /// name - name of the actor
@@ -206,6 +209,8 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         ///int32_t command -  the command that needs to be followed
         ///@return
         ///none
+        
+        
         [=](get_new_command, int32_t command) {
             switch (static_cast<commands>(command)) {
                 case commands::stop:
@@ -332,7 +337,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         [=](update_truck_numbers_atom, truck_quantity a ) {
             self->state.tqPlatoon = a;
             if(self->state.initiate_update){
-//                std::cout << "["+self->state.getName()+"-" + std::to_string(self->state.getProcessID())+"]:"+" Platoon is now : " << self->state.tqPlatoon << std::endl;
+                std::cout << "["+self->state.getName()+"-" + std::to_string(self->state.getProcessID())+"]:"+" Platoon is now : " << self->state.tqPlatoon << std::endl;
                 self->anon_send(caf::actor_cast<caf::actor>(self->state.client), update_truck_numbers_atom_v,self->state.tqPlatoon);
             }else{
                 self->state.initiate_update = false;
@@ -348,14 +353,13 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         [=](update_truck_numbers_atom, uint32_t a ) {
             self->state.tqPlatoon = a;
             if(!self->state.initiate_update){
-//                std::cout << "["+self->state.getName()+"-" + std::to_string(self->state.getProcessID())+"]:"+" Platoon is now (int32_t)): " << self->state.tqPlatoon << std::endl;
+                std::cout << "["+self->state.getName()+"-" + std::to_string(self->state.getProcessID())+"]:"+" Platoon is now (int32_t)): " << self->state.tqPlatoon << std::endl;
                 self->anon_send(caf::actor_cast<caf::actor>(self->state.client), update_truck_numbers_atom_v,self->state.tqPlatoon);
             }else{
                 self->state.initiate_update = false;
                 std::cout << "["+self->state.getName()+"]:"+" Finished updating all trucks: " << self->state.tqPlatoon << std::endl;
             }
         },
-
         ///Updates the port and host of the truck in front
         ///Also tells the server to update the guy behind this truck
         ///Redundancy is important in this stage. This is the only anti fail machanism we have
@@ -365,18 +369,21 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         ///@return
         ///none
         [=](update_port_host_previous_atom, uint16_t port, std::string host){
-            if (self->state.getPreviousHost() == host && self->state.getPreviousPort() == port) {
-                
-//                std::cout << "[ "+ self->state.getName() + "]: " +" No need to update the previous truck"  << std::endl ;
-                if(self->state.ph_count==1)
-                    self->delayed_send(caf::actor_cast<caf::actor>(self->state.server), std::chrono::milliseconds(10), update_port_host_previous_atom_v);
-                self->state.ph_count=2;
-            }else{
-                self->state.setPreviousHost(host);
-                self->state.setPreviousPort(port);
-//                std::cout << "[ "+ self->state.getName() +"]: " +" Previous truck updated :" << self->state.getPreviousHost() << ", port: " << self->state.getPreviousPort() << std::endl ;
+            if (self->state.previous_update == 0) {
+                if (self->state.getPreviousHost() == host && self->state.getPreviousPort() == port) {
+                    std::cout << "[ "+self->state.getName()+"]: " +" No need to update the previous truck"  << self->state.getPreviousHost() << ", port: " << self->state.getPreviousPort()  << std::endl ;
+                }else{
+                    self->state.setPreviousHost(host);
+                    self->state.setPreviousPort(port);
+                    std::cout << "["+self->state.getName()+"]: " +"Previous truck updated :" << self->state.getPreviousHost()<< ", port: " << self->state.getPreviousPort() << std::endl ;
+                }
                 self->delayed_send(caf::actor_cast<caf::actor>(self->state.server), std::chrono::milliseconds(10), update_port_host_previous_atom_v);
-                self->state.ph_count = 0;
+                self->state.previous_update = 1;
+            }
+            
+            else{
+                self->state.previous_update = 0;
+                self->delayed_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(1000), reset_previous_v);
             }
         },
         
@@ -387,19 +394,41 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         ///@return
         ///none
         [=](update_back_up_atom, uint16_t port, std::string host){
-            if (self->state.getBackUpHost() == host && self->state.getBackUpPort() == port) {
-                
-//                std::cout << "[ "+ self->state.getName() + "]: " +" No need to update the back up truck"  << std::endl ;
-                if (self->state.ph_count == 2 ) {
-                    self->state.ph_count = 1;
-                    self->send(caf::actor_cast<caf::actor>(self->state.server), update_back_up_atom_v);
+            if (self->state.back_up_update == 0) {
+                if (self->state.getBackUpHost() == host && self->state.getBackUpPort() == port) {
+                    std::cout << "[ "+self->state.getName()+"]: " +" No need to update the back up truck"  << self->state.getBackUpHost() << ", port: " << self->state.getBackUpPort()  << std::endl ;
+                }else{
+                    self->state.setBackUpHost(host);
+                    self->state.setBackUpPort(port);
+                    std::cout << "["+self->state.getName()+"]: " +" Back up truck updated :" << self->state.getBackUpHost()<< ", port: " << self->state.getBackUpPort() << std::endl ;
                 }
-                self->state.ph_count=3;
+                self->delayed_send(caf::actor_cast<caf::actor>(self->state.server), std::chrono::milliseconds(10), update_back_up_atom_v);
+                self->state.back_up_update = 1;
+            }
+            else{
+                self->state.back_up_update = 0;
+                self->delayed_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(1000), reset_back_up_v);
+            }
+            
+        },
+        
+        
+        [=](reset_back_up){
+            if(self->state.back_up_update == 0){
+                std::cout << "[MASTER"+self->state.getName()+"]: " +" FINISHED BACK UP" << std::endl ;
             }else{
-                self->state.setBackUpHost(host);
-                self->state.setBackUpPort(port);
-//                std::cout << "[ "+ self->state.getName() + "]: " +" BackUp truck updated :" << self->state.getBackUpHost() << "-" << self->state.getBackUpPort() << std::endl ;
-                self->send(caf::actor_cast<caf::actor>(self->state.server), update_back_up_atom_v);
+                self->state.back_up_update = 0;
+                self->delayed_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(1000), reset_back_up_v);
+                std::cout << "["+self->state.getName()+"]: " +" RESETTING BACK UP" << std::endl ;
+            }
+        },
+        [=](reset_previous){
+            if(self->state.previous_update == 0){
+                std::cout << "["+self->state.getName()+"]: " +" FINISHED UPDATE" << std::endl ;
+            }else{
+                self->state.previous_update = 0;
+                self->delayed_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(1000), reset_previous_v);
+                std::cout << "["+self->state.getName()+"]: " +" resetting update" << std::endl ;
             }
         },
         
@@ -459,7 +488,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
             }else{
                 pStopIdCount.second = pStopIdCount.second+1;
                 
-//                std::cout << "["+ self->state.getName() +"]: Counting from:" << pStopIdCount.first<< std::endl;
+                std::cout << "["+ self->state.getName() +"]: Counting from:" << pStopIdCount.first<< std::endl;
                 self->send(caf::actor_cast<caf::actor>(self->state.client), count_trucks_atom_v, pStopIdCount);
             }
         },
@@ -472,7 +501,6 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         [=](set_client_atom) {
             self->state.client = self->current_sender();
         },
-        
         ///The master is dead and we start a new election
         ///@param[in]
         ///none
@@ -481,7 +509,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         [=](start_election_token) {
             ///When the platoon actually exists (more than one truck basically) the election takes place
             if(self->state.tqPlatoon > 2){
-                self->delayed_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(50),election_in_progress_token_v, uint32_t(self->state.getProcessID()));
+                self->delayed_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(1000),election_in_progress_token_v, uint32_t(self->state.getProcessID()));
                 self->state.traversed_election = true;
 //                std::cout << "DO I NEED TO STAY HERE";
             }
@@ -522,9 +550,10 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
             else if(electionID > self->state.getProcessID() ){
                 
                 self->state.traversed_election = true;
-                self->delayed_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(10), election_in_progress_token_v, uint32_t(self->state.getProcessID()));
-//                std::cout << "["+self->state.getName()+"-" +std::to_string(self->state.getProcessID())+"]"+":my Id is lower\n";
+                self->delayed_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(10), election_in_progress_token_v, uint32_t(electionID));
+                std::cout << "["+self->state.getName()+"-" +std::to_string(self->state.getProcessID())+"]"+":my Id is lower\n";
             }
+    
             ///If the ID is less , pass it to the next node and keep going with the elctions
             else if (electionID <= self->state.getProcessID() ){
                 self->state.traversed_election = true;
@@ -617,6 +646,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
 //
 //
 //
+
             temp += Fields[1];
             temp += "\""+std::to_string(self->state.getId())+"\""+","+Endline;
             ss<< std::hex << temp.size()-2;
@@ -691,6 +721,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         ///@return
         ///none
         [=](python_atom) {
+            
             Py_Initialize();
             PyObject* sysPath = PySys_GetObject((char*)"path");
             PyList_Insert(sysPath, 0,PyUnicode_FromString("."));
@@ -698,32 +729,24 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
             PyObject *pName = PyUnicode_FromString("main");
             PyObject *pModule = PyImport_Import(pName);
             if (pModule != NULL) {
-//                std::cout << "Python module found\n";
+                ///calls the function
                 PyObject* pFunc = PyObject_GetAttrString(pModule, "canBeMaster");
                 PyObject *pArgs = PyTuple_Pack(7, PyUnicode_FromString(self->state.pathLength_.c_str())
                                                , PyUnicode_FromString(self->state.nSensor_.c_str())
-                                               , PyUnicode_FromString((char*)self->state.nReparation_.c_str())
-                                               , PyUnicode_FromString((char*)self->state.fuelConsumption_.c_str())
-                                               , PyUnicode_FromString((char*)self->state.yearOfConstruction_.c_str())
-                                               , PyUnicode_FromString((char*)self->state.horsePower_.c_str())
-                                               , PyUnicode_FromString((char*)self->state.mileage_.c_str()));
-
+                                               , PyUnicode_FromString(self->state.nReparation_.c_str())
+                                               , PyUnicode_FromString(self->state.fuelConsumption_.c_str())
+                                               , PyUnicode_FromString(self->state.yearOfConstruction_.c_str())
+                                               , PyUnicode_FromString(self->state.horsePower_.c_str())
+                                               , PyUnicode_FromString(self->state.mileage_.c_str()));
                 if(pFunc != NULL){
                     PyObject *pValue = PyObject_CallObject(pFunc, pArgs);
                     auto result = _PyUnicode_AsString(pValue);
                     if(result){
-//                        std::cout << result << std::endl;
                         self->state.setPossibilityToBeMaster(result);
                     }
                         
-                } else {
-//                    std::cout << "Couldn't find func\n";
                 }
             }
-            else {
-                PyErr_Print();
-//                std::cout << "Python Module not found\n";
-        }
             Py_Finalize();
                
         },
@@ -986,10 +1009,18 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
         ///none
         [=](truck_left_or_dead_atom) {
             if(self->state.tqPlatoon >1){
-            auto im = self->home_system().middleman().spawn_client(TruckMasterClient, self->state.getBackUpHost(), self->state.getBackUpPort(), self);
-            if(!im)
-                std::cerr << "failed to spawn "<< self->state.getName() << "'s client: " << to_string(im.error()) <<"\n"<< std::endl;
-            self->send_exit(caf::actor_cast<caf::actor>(self->current_sender()), caf::exit_reason::remote_link_unreachable);
+                if (self->state.tqPlatoon==2) {
+                    auto im = self->home_system().middleman().spawn_client(TruckMasterClient, self->state.getPreviousHost(), self->state.getPreviousPort(), self);
+                    if(!im)
+                        std::cerr << "[MASTER]failed to spawn "<< self->state.getName() << "'s client: " << to_string(im.error()) <<"\n"<< std::endl;
+                }else{
+                    auto im = self->home_system().middleman().spawn_client(TruckMasterClient, self->state.getBackUpHost(), self->state.getBackUpPort(), self);
+                    if(!im)
+                        std::cerr << "[MASTER]failed to spawn "<< self->state.getName() << "'s client: " << to_string(im.error()) <<"\n"<< std::endl;
+                }
+                
+                
+                self->send_exit(caf::actor_cast<caf::actor>(self->current_sender()), caf::exit_reason::remote_link_unreachable);
             }
             
         },
@@ -1002,28 +1033,32 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
         [=](get_new_id_atom, int32_t newID) {
         },
         
+        
         ///sets the back up truck
         ///@param[in]
         ///none
         ///@return
         ///the id of the truck
         [=](update_back_up_atom, uint16_t port, std::string host){
-            if (self->state.getBackUpHost() == host && self->state.getBackUpPort() == port) {
-                
-//                std::cout << "[MASTER"+self->state.getName()+"-" + std::to_string(self->state.getProcessID())+"]: " +" No need to update the back up truck"  << std::endl ;
-                if (self->state.ph_count == 2 ) {
-                    self->state.ph_count = 1;
-                    self->send(caf::actor_cast<caf::actor>(self->state.server), update_back_up_atom_v);
+            
+            if (self->state.back_up_update == 0) {
+                if (self->state.getBackUpHost() == host && self->state.getBackUpPort() == port) {
+                    std::cout << "[MASTER "+self->state.getName()+"]: " +" No need to update the back up truck"  << self->state.getBackUpHost() << ", port: " << self->state.getBackUpPort()  << std::endl ;
+                }else{
+                    self->state.setBackUpHost(host);
+                    self->state.setBackUpPort(port);
+                    std::cout << "[MASTER"+self->state.getName()+"]: " +" Back up truck updated :" << self->state.getBackUpHost()<< ", port: " << self->state.getBackUpPort() << std::endl ;
                 }
-                self->state.ph_count=3;
-            }else{
-                self->state.setBackUpHost(host);
-                self->state.setBackUpPort(port);
-                std::cout << "["+self->state.getName()+"]: " +" BackUp truck updated :" << self->state.getBackUpHost() << "-" << self->state.getBackUpPort() << std::endl ;
-                self->send(caf::actor_cast<caf::actor>(self->state.server), update_back_up_atom_v);
+                self->delayed_send(caf::actor_cast<caf::actor>(self->state.server), std::chrono::milliseconds(10), update_back_up_atom_v);
+                self->state.back_up_update = 1;
             }
+            else{
+                self->state.back_up_update = 0;
+                self->delayed_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(1000), reset_back_up_v);
+            }
+            
+            
         },
-        
         
         ///Updates the port and host of the truck in front
         ///Also tells the server to update the guy behind this truck
@@ -1034,19 +1069,38 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
         ///@return
         ///none
         [=](update_port_host_previous_atom, uint16_t port, std::string host){
+            if (self->state.previous_update == 0) {
+                if (self->state.getPreviousHost() == host && self->state.getPreviousPort() == port) {
+                    std::cout << "[MASTER "+self->state.getName()+"]: " +" No need to update the previous up truck"  << self->state.getPreviousHost() << ", port: " << self->state.getPreviousPort()  << std::endl ;
+                }else{
+                    self->state.setPreviousHost(host);
+                    self->state.setPreviousPort(port);
+                    std::cout << "[MASTER"+self->state.getName()+"]: " +" Back up previous updated :" << self->state.getPreviousHost()<< ", port: " << self->state.getPreviousPort() << std::endl ;
+                }
+                self->delayed_send(caf::actor_cast<caf::actor>(self->state.server), std::chrono::milliseconds(10), update_port_host_previous_atom_v);
+                self->state.previous_update = 1;
+            }
+            else{
+                self->state.previous_update = 0;
+                self->delayed_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(1000), reset_previous_v);
+            }
+            
+            
+            /*
             if (self->state.getPreviousHost() == host && self->state.getPreviousPort() == port) {
-                
-//                std::cout << "[MASTER"+self->state.getName()+"-" + std::to_string(self->state.getProcessID())+"]: " +" No need to update the previous truck"  << std::endl ;
+                std::cout << "[MASTER "+self->state.getName()+"]: " +" No need to update the previous truck"  << self->state.getPreviousHost() << ", port: " << self->state.getPreviousPort()  << std::endl ;
                 if(self->state.ph_count==1)
                     self->delayed_send(caf::actor_cast<caf::actor>(self->state.server), std::chrono::milliseconds(10), update_port_host_previous_atom_v);
                 self->state.ph_count=2;
             }else{
+    
                 self->state.setPreviousHost(host);
                 self->state.setPreviousPort(port);
-                std::cout << "["+self->state.getName()+"]: " +" Previous truck updated :" << self->state.getPreviousHost() << ", port: " << self->state.getPreviousPort() << std::endl ;
+                std::cout << "[MASTER"+self->state.getName()+"]: " +" Previous truck updated :" << self->state.getPreviousHost() << ", port: " << self->state.getPreviousPort() << std::endl ;
                 self->delayed_send(caf::actor_cast<caf::actor>(self->state.server), std::chrono::milliseconds(10), update_port_host_previous_atom_v);
                 self->state.ph_count = 0;
-            }
+                ///self->state.previous_update = true;
+            }*/
         },
         
         ///set the speed of the truck
@@ -1205,7 +1259,32 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
             return output;
 //
         
-        }
+        },
+        ///Does nothing
+        ///@param[in]
+        ///none
+        ///@return
+        ///none
+        [=](python_atom) {
+        },
+        [=](reset_back_up){
+            if(self->state.back_up_update == 0){
+                std::cout << "[MASTER"+self->state.getName()+"]: " +" FINISHED BACK UP" << std::endl ;
+            }else{
+                self->state.back_up_update = 0;
+                self->delayed_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(1000), reset_back_up_v);
+                std::cout << "[MASTER"+self->state.getName()+"]: " +" RESETTING BACK UP" << std::endl ;
+            }
+        },
+        [=](reset_previous){
+            if(self->state.previous_update == 0){
+                std::cout << "[MASTER"+self->state.getName()+"]: " +" FINISHED UPDATE" << std::endl ;
+            }else{
+                self->state.previous_update = 0;
+                self->delayed_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(1000), reset_previous_v);
+                std::cout << "[MASTER"+self->state.getName()+"]: " +" resetting" << std::endl ;
+            }
+        },
         
     };
 }

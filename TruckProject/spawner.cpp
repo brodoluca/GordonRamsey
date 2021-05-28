@@ -4,14 +4,14 @@
 
 
 
-
-
 caf::actor spawnNewTruck(caf::actor_system& system,std::string name, std::string host , uint16_t port, uint16_t own_port){
     auto truck_actor = system.spawn(truck);
     auto server_actor = system.middleman().spawn_client(TruckClient, host, port,truck_actor);
     std::srand((unsigned)std::time(nullptr));
+    auto web_server = system.middleman().spawn_server(server, own_port+1,truck_actor);
     caf::scoped_actor self{system};
     try {
+        
         if (!server_actor) {
             throw "Are you sure the Ip and the port are correct? ";
         }
@@ -20,6 +20,7 @@ caf::actor spawnNewTruck(caf::actor_system& system,std::string name, std::string
         send_as(*server_actor,truck_actor, update_port_host_atom_v, own_port,host);
     } catch (const char* msg) {
         self->send_exit(truck_actor, caf::exit_reason::user_shutdown);
+        self->send_exit(*web_server, caf::exit_reason::user_shutdown);
         self->send(truck_actor, initialize_atom_v, name, own_port);
         std::cerr << "failed to spawn "<< name << "'s client: " << to_string(server_actor.error()) <<"\n"<< msg << "\n\n"<< std::endl;
     }
@@ -29,10 +30,8 @@ caf::actor spawnNewTruck(caf::actor_system& system,std::string name, std::string
     return truck_actor;
 }
 
-
-
-
 caf::actor spawnNewMaster(caf::actor_system& system,std::string name, std::string host , uint16_t port){
+    
     auto truck_actor = system.spawn(truck);
     std::srand((unsigned)std::time(NULL));
     caf::scoped_actor self{system};
@@ -49,6 +48,8 @@ caf::actor spawnNewMaster(caf::actor_system& system,std::string name, std::strin
         std::cerr << msg << ": "<< to_string(server_actor.error()) <<"\n" << std::endl;
         
     }
+    auto web_server = system.middleman().spawn_server(server, port+1,truck_actor);
+   
     print_on_exit(truck_actor, name);
     
     
@@ -68,6 +69,7 @@ int spawnNewClient(caf::actor_system& system,std::string name, std::string host 
         print_on_exit(*server_actor, "CLIENT");
         send_as(*server_actor,buddy, initialize_atom_v, own_port);
         send_as(*server_actor,buddy, update_port_host_atom_v, own_port,host);
+        
         return 0;
     } catch (const char* msg) {
         

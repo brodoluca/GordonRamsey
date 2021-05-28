@@ -72,11 +72,23 @@ caf::behavior TruckServer(caf::io::broker *self, caf::io::connection_handle hdl,
         
         ///When an election takes place, this sends back to the client the token
         [=](election_in_progress_token, uint32_t ID) {
+            std::cout << "AOH:::"<<ID<<std::endl;
             write_int(self, hdl, static_cast<uint8_t>(operations::election_in_progress));
             write_int(self, hdl, ID);
             self->flush(hdl);
         },
         
+        ///When an election takes place, this sends back to the client the token
+        [=](reset_back_up) {
+            write_int(self, hdl, static_cast<uint8_t>(operations::reset_back_up));
+            write_int(self, hdl, 1);
+            self->flush(hdl);
+        },
+        [=](reset_previous) {
+            write_int(self, hdl, static_cast<uint8_t>(operations::reset_previous));
+            write_int(self, hdl, 1);
+            self->flush(hdl);
+        },
         
         ///Updates the truck quantity by certain amount
         [=](update_truck_numbers_atom, truck_quantity q) {

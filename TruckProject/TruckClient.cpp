@@ -26,9 +26,9 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
           if (msg.handle == hdl) {
                 self->request(buddy, std::chrono::seconds(2), is_master_atom_v).then(
                 [=](bool res){
+                    
                         if(res){
                             std::cout << "[TRUCK]: Connection to master closed" << std::endl;
-
                             int selection_process = RING;
                             
                             switch (selection_process) {
@@ -37,14 +37,14 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
                                     self->send(buddy, decrease_number_trucks_atom_v);
                                     self->delayed_send(buddy,std::chrono::milliseconds(10), count_trucks_atom_v);
                                     self->quit(caf::exit_reason::remote_link_unreachable);
-                                    self->delayed_send(buddy, std::chrono::milliseconds(10),truck_left_or_dead_atom_v);
+                                    self->delayed_send(buddy, std::chrono::milliseconds(100),truck_left_or_dead_atom_v);
                                     break;
                                 case NORMAL:
                                     self->send(buddy, decrease_number_trucks_atom_v);
                                     self->send(buddy, become_master_atom_v);
                                     self->delayed_send(buddy,std::chrono::milliseconds(10), count_trucks_atom_v);
                                     self->quit(caf::exit_reason::remote_link_unreachable);
-                                    self->delayed_send(buddy, std::chrono::milliseconds(10),truck_left_or_dead_atom_v);
+                                    self->delayed_send(buddy, std::chrono::milliseconds(100),truck_left_or_dead_atom_v);
                                 default:
                                     break;
                             }
@@ -245,6 +245,12 @@ caf::behavior TruckClient(caf::io::broker *self, caf::io::connection_handle hdl,
                     break;
                 case operations::decrease_number_trucks:
                     self->send(buddy, decrease_number_trucks_atom_v);
+                    break;
+                case operations::reset_previous:
+                    self->send(buddy, reset_previous_v);
+                    break;
+                case operations::reset_back_up:
+                    self->send(buddy, reset_back_up_v);
                     break;
                 
                     ///Request for my own port and hsot

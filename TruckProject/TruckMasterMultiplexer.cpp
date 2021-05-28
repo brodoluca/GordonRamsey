@@ -107,6 +107,12 @@ caf::behavior TruckMasterMultiplexer(caf::io::broker *self, caf::io::connection_
                     self->send(buddy, update_truck_numbers_atom_v,val);
 
                     break;
+                case operations::reset_previous:
+                    self->send(buddy, reset_previous_v);
+                    break;
+                case operations::reset_back_up:
+                    self->send(buddy, reset_back_up_v);
+                    break;
                 
               default:
                     std::cout << "[MASTER_MULTIPLEXER]:invalid value for op_val, stop" << std::endl;

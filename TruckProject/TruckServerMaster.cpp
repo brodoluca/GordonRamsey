@@ -15,7 +15,7 @@
 
 caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handle hdl, const caf::actor& buddy){
     /*-----------------------------*/
-    self->send(buddy, python_atom_v);
+//    self->send(buddy, python_atom_v);
     /*-----------------------------*/
     ///monitors the buddy and when it's down, we quit
         self->monitor(buddy);
@@ -72,7 +72,7 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
             [=](ask_for_input_atom){
                 auto input = self->home_system().spawn(InputMonitor);
                 self->send(input, 1);
-                self->delayed_send(self, std::chrono::seconds(3), ask_for_input_atom_v);
+//                self->delayed_send(self, std::chrono::seconds(3), ask_for_input_atom_v);
             },
         ///initializes the truck platoon and adds one to ir
         ///it also sends to the truck connected the new platoon size
@@ -297,6 +297,16 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
                   self->flush(hdl);
               });
           },
+            [=](reset_back_up) {
+                write_int(self, hdl, static_cast<uint8_t>(operations::reset_back_up));
+                write_int(self, hdl, 1);
+                self->flush(hdl);
+            },
+            [=](reset_previous) {
+                write_int(self, hdl, static_cast<uint8_t>(operations::reset_previous));
+                write_int(self, hdl, 1);
+                self->flush(hdl);
+            },
     
             [=](update_back_up_atom){
                 std::string Host = "localhost";
@@ -323,15 +333,13 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
                 ///If there are no other connections we fork to the same behavior and we quit this one
                 ///(We basically allow reconnections)
                 /// If not, we for to an external one and we store the actor
-        
-    
+            
             [=](const caf::io::new_connection_msg& msg) {
                 std::cout << "[MASTER]: New Connection_Accepted" << std::endl;
                 if (self->num_connections() <=1 ) {
                     auto impl = self->fork(TruckServerMaster, msg.handle, std::move(buddy));
                     std::cout << "[MASTER]: Im gonna die and fork to a new broker. Connections: "<<self->num_connections() << std::endl;
                     self->quit(caf::sec::feature_disabled);
-                    
                         
                     self->send(buddy, increment_number_trucks_atom_v);
 //                    self->delayed_send(buddy, std::chrono::seconds(3), count_trucks_atom_v);
@@ -380,6 +388,16 @@ caf::behavior temp_master_server(caf::io::broker* self, const caf::actor& buddy)
     [=](somebody_connected_atom){
            
     },
+      [=](reset_back_up) {
+//          write_int(self, hdl, static_cast<uint8_t>(operations::reset_back_up));
+//          write_int(self, hdl, 1);
+//          self->flush(hdl);
+      },
+      [=](reset_previous) {
+//          write_int(self, hdl, static_cast<uint8_t>(operations::reset_previous));
+//          write_int(self, hdl, 1);
+//          self->flush(hdl);
+      },
       
   };
 }

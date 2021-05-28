@@ -12,8 +12,10 @@
 caf::behavior server(caf::io::broker* self,const caf::actor & buddy) {
   auto counter = std::make_shared<int>(0);
   self->set_down_handler([=](caf::down_msg&) {
+      aout(self) << "Listening for new connections" << std::endl;
     ++*counter;
   });
+    self->link_to(buddy);
   self->delayed_send(self, std::chrono::seconds(1), caf::tick_atom_v);
   return {
     [=](const caf::io::new_connection_msg& ncm) {
@@ -22,7 +24,7 @@ caf::behavior server(caf::io::broker* self,const caf::actor & buddy) {
 //      self->link_to(worker);
     },
     [=](caf::tick_atom) {
-      aout(self) << "Finished " << *counter << " requests per second." << std::endl;
+//      aout(self) << "Finished " << *counter << " requests per second." << std::endl;
       *counter = 0;
       self->delayed_send(self, std::chrono::seconds(1), caf::tick_atom_v);
     }

@@ -58,6 +58,8 @@ public:
     ///I need those to be initialized at compile time with the value I want. If i put them in the union with the others, I cant do that
     ///And it will initialize them with junk. 
     bool traversed_election = false;
+    int back_up_update = 0;
+    int previous_update = 0;
     union{
         bool initiate_backup_update;
         
@@ -151,8 +153,14 @@ caf::behavior truck(caf::stateful_actor<Truck>* self);
 ///the state is saved in the struct Truck
 caf::behavior master(caf::stateful_actor<Truck>* self);
 
+
+
 /*---------Spawners-------------*/
-///Spawns a truck with s given name and connects it to a given server
+
+
+
+///Spawns a truck with s given name and connects it to a given server. It also spawns a middleman which comunicates with the web interface.
+///KEEP IN MIND THE PORT OF THE WEB SERVER IS OWN_PORT+1
 ///@param
 /// system - system used to spawn the truck
 /// name - name of the truck
@@ -163,7 +171,8 @@ caf::behavior master(caf::stateful_actor<Truck>* self);
 /// actor handling the TRUCK
 caf::actor spawnNewTruck(caf::actor_system& system, std::string name, std::string host, uint16_t port, uint16_t own_port);
 
-///Spawns a master with s given name and connects it to a given server
+///Spawns a master with s given name and connects it to a given server. It also spawns a middleman which comunicates with the web interface.
+///KEEP IN MIND THE PORT OF THE WEB SERVER IS PORT+1
 ///@param
 /// system - system used to spawn the truck
 /// name - name of the truck which is the buddy of the master
@@ -171,7 +180,6 @@ caf::actor spawnNewTruck(caf::actor_system& system, std::string name, std::strin
 /// port - port of the server
 /// @return
 /// actor handling the TRUCK
-
 caf::actor spawnNewMaster(caf::actor_system& system,std::string name, std::string host , uint16_t port);
 
 ///Spawns a new client without truck.
@@ -186,6 +194,13 @@ caf::actor spawnNewMaster(caf::actor_system& system,std::string name, std::strin
 /// 0 - no errors
 /// - 1 - errors
 int spawnNewClient(caf::actor_system& system,std::string name, std::string host , uint16_t port, uint16_t own_port, const caf::actor& buddy);
+
+
+
+
+
+/*---------Truck master server-------------*/
+
 
 ///behavior handling the master and its connections with the other trucks
 ///@param
@@ -218,6 +233,9 @@ caf::behavior TruckMasterMultiplexer(caf::io::broker *self, caf::io::connection_
 
 
 /*---------Truck normal server-------------*/
+
+
+
 
 ///behavior handling the connection between two normal trucks. The truck behind this one will be connected to this broker here
 ///@param
