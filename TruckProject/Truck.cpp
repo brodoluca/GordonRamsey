@@ -410,13 +410,11 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         ///@return
         ///none
         [=](truck_left_or_dead_atom) {
-          
+    
                 auto im = self->home_system().middleman().spawn_client(TruckClient, self->state.getBackUpHost(), self->state.getBackUpPort(), self);
                 if(!im)
                     std::cerr << "failed to spawn "<< self->state.getName() << "'s client: " << to_string(im.error()) <<"\n"<< std::endl;
                 self->send_exit(caf::actor_cast<caf::actor>(self->current_sender()), caf::exit_reason::remote_link_unreachable);
-          
-            
         },
         
         ///This is called by the switcheroo function. Basically, it creates a client that connects to the truck in front of the truck we want to connect to
@@ -685,7 +683,50 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
             return output;
 //
         
+        },
+        
+        ///Calls the python script that determines the possibility this has to become a master
+        ///@param[in]
+        ///none
+        ///@return
+        ///none
+        [=](python_atom) {
+            Py_Initialize();
+            PyObject* sysPath = PySys_GetObject((char*)"path");
+            PyList_Insert(sysPath, 0,PyUnicode_FromString("."));
+            // Load the module
+            PyObject *pName = PyUnicode_FromString("main");
+            PyObject *pModule = PyImport_Import(pName);
+            if (pModule != NULL) {
+//                std::cout << "Python module found\n";
+                PyObject* pFunc = PyObject_GetAttrString(pModule, "canBeMaster");
+                PyObject *pArgs = PyTuple_Pack(7, PyUnicode_FromString(self->state.pathLength_.c_str())
+                                               , PyUnicode_FromString(self->state.nSensor_.c_str())
+                                               , PyUnicode_FromString((char*)self->state.nReparation_.c_str())
+                                               , PyUnicode_FromString((char*)self->state.fuelConsumption_.c_str())
+                                               , PyUnicode_FromString((char*)self->state.yearOfConstruction_.c_str())
+                                               , PyUnicode_FromString((char*)self->state.horsePower_.c_str())
+                                               , PyUnicode_FromString((char*)self->state.mileage_.c_str()));
+
+                if(pFunc != NULL){
+                    PyObject *pValue = PyObject_CallObject(pFunc, pArgs);
+                    auto result = _PyUnicode_AsString(pValue);
+                    if(result){
+//                        std::cout << result << std::endl;
+                        self->state.setPossibilityToBeMaster(result);
+                    }
+                        
+                } else {
+//                    std::cout << "Couldn't find func\n";
+                }
+            }
+            else {
+                PyErr_Print();
+//                std::cout << "Python Module not found\n";
         }
+            Py_Finalize();
+               
+        },
         
     };
 }
@@ -1230,6 +1271,9 @@ uint32_t Truck::getProcessID(){
     return processID_;
 }
 
+std::string Truck::getPossibilityToBeMaster(){
+    return masterPossibility_;
+}
 
 ///
 ///    Setters
@@ -1275,4 +1319,7 @@ void Truck::setBackUpPort(uint16_t port){
 }
 void Truck::setProcessId(uint32_t processID){
     processID_ = processID;
+}
+void Truck::setPossibilityToBeMaster(std::string possibility){
+    masterPossibility_ = possibility;
 }

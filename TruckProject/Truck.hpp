@@ -21,8 +21,7 @@
 
 #include "InputMonitor.hpp"
 #include "utils.h"
-
-
+#include "Python.h"
 
 
 ///  To have a better idea of how this works, check our github
@@ -64,7 +63,19 @@ public:
         
         int ph_count;
     };
-
+    
+    ///truck details
+    std::string pathLength_ = "594";
+    std::string nSensor_ = "75";
+    std::string nReparation_ = "0";
+    std::string fuelConsumption_ = "26";
+    std::string yearOfConstruction_ = "2013";
+    std::string horsePower_ = "500";
+    std::string mileage_ = "20";
+    
+    
+    
+    
     ///stores all the actors handling different connections
     std::vector<caf::actor> vConnectionMultiplexer;//WIP
 public:
@@ -81,6 +92,8 @@ public:
     std::string getBackUpHost();
     uint16_t getBackUpPort();
     uint32_t getProcessID();
+    std::string getPossibilityToBeMaster();
+    
     
     void setMasterConnection(bool res);
     void setName(std::string name);
@@ -94,6 +107,7 @@ public:
     void setBackUpHost(std::string host);
     void setBackUpPort(uint16_t port);
     void setProcessId(uint32_t processID);
+    void setPossibilityToBeMaster(std::string possibility);
 private:
     ///name of the truck
     std::string sName_ = "Name";
@@ -123,6 +137,7 @@ private:
     ///The other ID on the other hand, is used for the other operations
     uint32_t processID_;
     
+    std::string masterPossibility_;
 };
 
 /*---------Behaviors-------------*/

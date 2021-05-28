@@ -13,8 +13,10 @@
 
 ///This file includes the behavior of the master.
 
-
 caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handle hdl, const caf::actor& buddy){
+    /*-----------------------------*/
+    self->send(buddy, python_atom_v);
+    /*-----------------------------*/
     ///monitors the buddy and when it's down, we quit
         self->monitor(buddy);
         self->set_down_handler([=](caf::down_msg& dm) {
@@ -351,6 +353,7 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
 ///We do this because it allows us to save the handler for the connection
 caf::behavior temp_master_server(caf::io::broker* self, const caf::actor& buddy) {
 //  std::cout << "[TEMP_SERVER]: running" << std::endl;
+    self->send(buddy, python_atom_v);
   return {
       ///The temp server forks to the main one and dies afterwards
     [=](const caf::io::new_connection_msg& msg) {

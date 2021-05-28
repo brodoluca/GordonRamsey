@@ -32,6 +32,7 @@ public:
     static inline const char* name = "InputMonitor";
 };
 
+
 inline caf::behavior InputMonitor(caf::stateful_actor<InputMonitorState>* self) {
     struct pollfd pfd = { STDIN_FILENO, POLLIN, 0 };
     std::string line;
