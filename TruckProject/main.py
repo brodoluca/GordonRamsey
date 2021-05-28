@@ -23,13 +23,15 @@ def canBeMaster(pl, ns, nr, fc, yoc, hp, m ):
     """predicition with the test set"""
     y_pred = model.predict(X_test.to_numpy())
     """Output the accuracy"""
-    print("Accuracy:", metrics.accuracy_score(y_test, y_pred) * 100)
-    """Creation of the example nparray"""
-    x_p = np.array([pl, ns, nr, fc, yoc, hp, m]).reshape(1, -1)
-    """Predict if master"""
-    ye = model.predict(x_p)
-    print(ye)
 
+    """Creation of the example nparray"""
+    x_p = np.array([int(pl), int(ns), int(nr), int(fc), int(yoc), int(hp), int(m)]).reshape(1, -1)
+    """Predict if master"""
+    ye = model.predict_proba(x_p)
+
+    a = np.array2string(ye[0][1])
+    print(a)
+    return a
 
 
 if __name__ == '__main__':
