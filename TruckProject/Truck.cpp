@@ -543,9 +543,9 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
             else if(electionID != self->state.getProcessID() && self->state.traversed_election){
                 self->delayed_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(10), election_in_progress_token_v, electionID);
                 self->state.traversed_election = false;
-//                std::cout << "["+self->state.getName()+"-" +std::to_string(self->state.getProcessID())+"]:"+"I pass it along\n";
+                std::cout << "["+self->state.getName()+"-" +std::to_string(self->state.getProcessID())+"]:"+"I pass it along\n";
             }
-
+        
             ///If the ID is bigger, pass along my ID and keep going with the elections
             else if(electionID > self->state.getProcessID() ){
                 
@@ -558,7 +558,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
             else if (electionID <= self->state.getProcessID() ){
                 self->state.traversed_election = true;
                 self->delayed_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(10), election_in_progress_token_v, uint32_t(self->state.getProcessID()));
-//                std::cout << "["+self->state.getName()+"-" +std::to_string(self->state.getProcessID())+"]"+":my id is bigger\n";
+                std::cout << "["+self->state.getName()+"-" +std::to_string(self->state.getProcessID())+"]"+":my id is bigger\n";
             }
         },
         
@@ -1022,7 +1022,6 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
                 
                 self->send_exit(caf::actor_cast<caf::actor>(self->current_sender()), caf::exit_reason::remote_link_unreachable);
             }
-            
         },
         
         ///THis is a placeholder and does nothing
@@ -1276,6 +1275,7 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
                 std::cout << "[MASTER"+self->state.getName()+"]: " +" RESETTING BACK UP" << std::endl ;
             }
         },
+        
         [=](reset_previous){
             if(self->state.previous_update == 0){
                 std::cout << "[MASTER"+self->state.getName()+"]: " +" FINISHED UPDATE" << std::endl ;
@@ -1288,8 +1288,6 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
         
     };
 }
-
-
 
 
 

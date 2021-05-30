@@ -361,7 +361,11 @@ caf::behavior TruckServerMaster(caf::io::broker *self, caf::io::connection_handl
 ///We do this because it allows us to save the handler for the connection
 caf::behavior temp_master_server(caf::io::broker* self, const caf::actor& buddy) {
 //  std::cout << "[TEMP_SERVER]: running" << std::endl;
-    self->send(buddy, python_atom_v);
+//    self->send(buddy, python_atom_v);
+    
+//    self->delayed_send(self, std::chrono::seconds(2), ask_for_input_atom_v);
+    
+    
   return {
       ///The temp server forks to the main one and dies afterwards
     [=](const caf::io::new_connection_msg& msg) {
@@ -382,11 +386,13 @@ caf::behavior temp_master_server(caf::io::broker* self, const caf::actor& buddy)
       [=](tell_back_im_master_atom){
     },[=](update_truck_behind_port_host_atom, uint16_t p, std::string s){
     },[=](ask_for_input_atom){
+//        auto input = self->home_system().spawn(InputMonitor);
+//        self->send(input, 1);
     },
+      
     [=](update_truck_numbers_atom, truck_quantity q) {
     },
     [=](somebody_connected_atom){
-           
     },
       [=](reset_back_up) {
 //          write_int(self, hdl, static_cast<uint8_t>(operations::reset_back_up));

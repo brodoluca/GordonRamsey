@@ -23,6 +23,17 @@
 #include "utils.h"
 #include "Python.h"
 
+#include <iostream>
+#include <cstdlib>
+#include <cstdio>
+#include <array>
+#include <unistd.h>
+#include <stdio.h>
+#include <string.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 ///  To have a better idea of how this works, check our github
 ///  There you can find documentation and all of these files as well

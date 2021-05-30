@@ -11,7 +11,6 @@ caf::actor spawnNewTruck(caf::actor_system& system,std::string name, std::string
     auto web_server = system.middleman().spawn_server(server, own_port+1,truck_actor);
     caf::scoped_actor self{system};
     try {
-        
         if (!server_actor) {
             throw "Are you sure the Ip and the port are correct? ";
         }
