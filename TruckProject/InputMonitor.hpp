@@ -59,7 +59,6 @@ inline caf::behavior InputMonitor(caf::stateful_actor<InputMonitorState>* self) 
             char arr1[80];
             while (1)
             {
-                
                 fd = open(myfifo, O_RDONLY);
                 read(fd, arr1, sizeof(arr1));
                 printf("User2: %s\n", arr1);

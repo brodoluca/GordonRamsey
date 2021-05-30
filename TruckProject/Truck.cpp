@@ -12,9 +12,6 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
     //initialization is done through a behavior
     
     
-    
-    
-    
     return{
         ///Initializes the actor with a name
         ///@param[in]
@@ -243,6 +240,7 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
                     break;
             }
         },
+        
         
         ///Routine to become the master. Basically, it becomes the master behavior, sets its id as the biggest possible number and adverst the server to become the master as well
         ///@param[in]
@@ -721,7 +719,6 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
         ///@return
         ///none
         [=](python_atom) {
-            
             Py_Initialize();
             PyObject* sysPath = PySys_GetObject((char*)"path");
             PyList_Insert(sysPath, 0,PyUnicode_FromString("."));
@@ -731,13 +728,13 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
             if (pModule != NULL) {
                 ///calls the function
                 PyObject* pFunc = PyObject_GetAttrString(pModule, "canBeMaster");
-                PyObject *pArgs = PyTuple_Pack(7, PyUnicode_FromString(self->state.pathLength_.c_str())
-                                               , PyUnicode_FromString(self->state.nSensor_.c_str())
-                                               , PyUnicode_FromString(self->state.nReparation_.c_str())
-                                               , PyUnicode_FromString(self->state.fuelConsumption_.c_str())
-                                               , PyUnicode_FromString(self->state.yearOfConstruction_.c_str())
-                                               , PyUnicode_FromString(self->state.horsePower_.c_str())
-                                               , PyUnicode_FromString(self->state.mileage_.c_str()));
+                PyObject *pArgs = PyTuple_Pack(7, PyUnicode_FromString(self->state.truckInformation.pathLength_.c_str())
+                                               , PyUnicode_FromString(self->state.truckInformation.nSensor_.c_str())
+                                               , PyUnicode_FromString(self->state.truckInformation.nReparation_.c_str())
+                                               , PyUnicode_FromString(self->state.truckInformation.fuelConsumption_.c_str())
+                                               , PyUnicode_FromString(self->state.truckInformation.yearOfConstruction_.c_str())
+                                               , PyUnicode_FromString(self->state.truckInformation.horsePower_.c_str())
+                                               , PyUnicode_FromString(self->state.truckInformation.mileage_.c_str()));
                 if(pFunc != NULL){
                     PyObject *pValue = PyObject_CallObject(pFunc, pArgs);
                     auto result = _PyUnicode_AsString(pValue);
@@ -750,7 +747,28 @@ caf::behavior truck(caf::stateful_actor<Truck>* self){
             Py_Finalize();
                
         },
-        
+        [=](set_truck_information,std::string pathLength,std::string nSensor,std::string nReparation,std::string fuelConsumption,std::string yearOfConstruction,std::string horsePower,std::string mileage) {
+            
+            
+            self->state.truckInformation. pathLength_ = pathLength;
+            self->state.truckInformation.nSensor_ = nSensor;
+            self->state.truckInformation.nReparation_ = nReparation;
+            self->state.truckInformation.fuelConsumption_ = fuelConsumption;
+            self->state.truckInformation.yearOfConstruction_ = yearOfConstruction;
+            self->state.truckInformation.horsePower_ = horsePower;
+            self->state.truckInformation.mileage_ = mileage;
+            
+//            std::cout <<self->state.truckInformation. pathLength_ <<" "<<
+//            self->state.truckInformation.nSensor_ <<" "<<
+//            self->state.truckInformation.nReparation_ <<" "<<
+//            self->state.truckInformation.fuelConsumption_<<" "<<
+//            self->state.truckInformation.yearOfConstruction_ <<" "<<
+//            self->state.truckInformation.horsePower_ <<" "<<
+//            self->state.truckInformation.mileage_;
+        },
+        [=](set_master_probability,std::string prob){
+            self->state.setPossibilityToBeMaster(prob);
+        },
     };
 }
 
@@ -1257,7 +1275,7 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
 //            std::cout << output;
             return output;
 //
-        
+            
         },
         ///Does nothing
         ///@param[in]
@@ -1265,6 +1283,32 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
         ///@return
         ///none
         [=](python_atom) {
+            Py_Initialize();
+            PyObject* sysPath = PySys_GetObject((char*)"path");
+            PyList_Insert(sysPath, 0,PyUnicode_FromString("."));
+            // Load the module
+            PyObject *pName = PyUnicode_FromString("main");
+            PyObject *pModule = PyImport_Import(pName);
+            if (pModule != NULL) {
+                ///calls the function
+                PyObject* pFunc = PyObject_GetAttrString(pModule, "canBeMaster");
+                PyObject *pArgs = PyTuple_Pack(7, PyUnicode_FromString(self->state.truckInformation.pathLength_.c_str())
+                                               , PyUnicode_FromString(self->state.truckInformation.nSensor_.c_str())
+                                               , PyUnicode_FromString(self->state.truckInformation.nReparation_.c_str())
+                                               , PyUnicode_FromString(self->state.truckInformation.fuelConsumption_.c_str())
+                                               , PyUnicode_FromString(self->state.truckInformation.yearOfConstruction_.c_str())
+                                               , PyUnicode_FromString(self->state.truckInformation.horsePower_.c_str())
+                                               , PyUnicode_FromString(self->state.truckInformation.mileage_.c_str()));
+                if(pFunc != NULL){
+                    PyObject *pValue = PyObject_CallObject(pFunc, pArgs);
+                    auto result = _PyUnicode_AsString(pValue);
+                    if(result){
+                        self->state.setPossibilityToBeMaster(result);
+                    }
+                        
+                }
+            }
+            Py_Finalize();
         },
         [=](reset_back_up){
             if(self->state.back_up_update == 0){
@@ -1284,6 +1328,18 @@ caf::behavior master(caf::stateful_actor<Truck>* self){
                 self->delayed_send(caf::actor_cast<caf::actor>(self->state.server),std::chrono::milliseconds(1000), reset_previous_v);
                 std::cout << "[MASTER"+self->state.getName()+"]: " +" resetting" << std::endl ;
             }
+        },
+        [=](set_truck_information,std::string pathLength,std::string nSensor,std::string nReparation,std::string fuelConsumption,std::string yearOfConstruction,std::string horsePower,std::string mileage) {
+            self->state.truckInformation. pathLength_ = pathLength;
+            self->state.truckInformation.nSensor_ = nSensor;
+            self->state.truckInformation.nReparation_ = nReparation;
+            self->state.truckInformation.fuelConsumption_ = fuelConsumption;
+            self->state.truckInformation.yearOfConstruction_ = yearOfConstruction;
+            self->state.truckInformation.horsePower_ = horsePower;
+            self->state.truckInformation.mileage_ = mileage;
+        },
+        [=](set_master_probability,std::string prob){
+            self->state.setPossibilityToBeMaster(prob);
         },
         
     };

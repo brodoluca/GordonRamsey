@@ -78,14 +78,16 @@ public:
     };
     
     ///truck details
-    std::string pathLength_ = "594";
-    std::string nSensor_ = "75";
-    std::string nReparation_ = "0";
-    std::string fuelConsumption_ = "26";
-    std::string yearOfConstruction_ = "2013";
-    std::string horsePower_ = "500";
-    std::string mileage_ = "20";
-    
+    struct truck_information{
+    public:
+        std::string pathLength_ = "594";
+        std::string nSensor_ = "75";
+        std::string nReparation_ = "0";
+        std::string fuelConsumption_ = "26";
+        std::string yearOfConstruction_ = "2013";
+        std::string horsePower_ = "500";
+        std::string mileage_ = "20";
+    } truckInformation;
     
     
     
@@ -121,6 +123,7 @@ public:
     void setBackUpPort(uint16_t port);
     void setProcessId(uint32_t processID);
     void setPossibilityToBeMaster(std::string possibility);
+    
 private:
     ///name of the truck
     std::string sName_ = "Name";
@@ -296,5 +299,24 @@ caf::behavior server(caf::io::broker* self,const caf::actor & buddy);
 /// self - broker itself
 /// buddy - truck  which we are associated to
 caf::behavior connection_worker(caf::io::broker* self, caf::io::connection_handle hdl,const caf::actor & buddy);
+
+///Sets the information related to the truck, in addition calculates the probability that the truck has to connect a master
+///@param[in]
+///pathLength  -> length of the path the truck has to follow
+///nSensor -> number of sensors
+///nReparation ->amount of the reparations
+///fuelConsumption ->the fuel consumption
+///yearOfConstruction ->year of construction
+///horsePower ->amount of horse powers
+///mileage ->amount of kms done
+void setTruckInformation(std::string pathLength,
+                         std::string nSensor,
+                         std::string nReparation,
+                         std::string fuelConsumption,
+                         std::string yearOfConstruction,
+                         std::string horsePower,
+                         std::string mileage,const caf::actor& buddy);
+
+void calculateTruckProbability(const caf::actor& buddy);
 
 #endif /* Truck_hpp */

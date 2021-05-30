@@ -382,7 +382,7 @@ caf::behavior temp_master_server(caf::io::broker* self, const caf::actor& buddy)
       ///I don't think these are actually being caleld, but they are here so the program doesnt crash
       ///Basically, there is a distinction between server with a client conencted and server with no client connected
       ///We dont do shit if we dont have a client e we leave it that way.
-      
+    
       [=](tell_back_im_master_atom){
     },[=](update_truck_behind_port_host_atom, uint16_t p, std::string s){
     },[=](ask_for_input_atom){

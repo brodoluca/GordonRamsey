@@ -75,6 +75,8 @@ CAF_ADD_ATOM(truck_block, prepare_json_message);
 CAF_ADD_ATOM(truck_block, python_atom);
 CAF_ADD_ATOM(truck_block, reset_back_up);
 CAF_ADD_ATOM(truck_block, reset_previous);
+CAF_ADD_ATOM(truck_block, set_truck_information);
+CAF_ADD_ATOM(truck_block, set_master_probability)
 CAF_ADD_TYPE_ID(truck_block, (std::pair<int32_t, std::string>) )
 CAF_ADD_TYPE_ID(truck_block, (std::pair<uint32_t, uint32_t>))
 

@@ -1,5 +1,3 @@
-
-
 #include "Truck.hpp"
 
 
@@ -28,6 +26,9 @@ caf::actor spawnNewTruck(caf::actor_system& system,std::string name, std::string
     
     return truck_actor;
 }
+
+
+
 
 caf::actor spawnNewMaster(caf::actor_system& system,std::string name, std::string host , uint16_t port){
     
@@ -77,4 +78,54 @@ int spawnNewClient(caf::actor_system& system,std::string name, std::string host 
         return -1;
     }
     
+}
+
+
+
+void setTruckInformation(std::string pathLength,
+                         std::string nSensor,
+                         std::string nReparation,
+                         std::string fuelConsumption,
+                         std::string yearOfConstruction,
+                         std::string horsePower,
+                         std::string mileage,const caf::actor& buddy ){
+    
+    caf::scoped_actor self{buddy.home_system()};
+    self->send(buddy, set_truck_information_v, pathLength,nSensor,nReparation,fuelConsumption,yearOfConstruction,horsePower,mileage);
+    
+    Py_Initialize();
+    PyObject* sysPath = PySys_GetObject((char*)"path");
+    PyList_Insert(sysPath, 0,PyUnicode_FromString("."));
+    // Load the module
+    PyObject *pName = PyUnicode_FromString("main");
+    PyObject *pModule = PyImport_Import(pName);
+    if (pModule != NULL) {
+        ///calls the function
+        PyObject* pFunc = PyObject_GetAttrString(pModule, "canBeMaster");
+        PyObject *pArgs = PyTuple_Pack(7, PyUnicode_FromString(pathLength.c_str())
+                                       , PyUnicode_FromString(nSensor.c_str())
+                                       , PyUnicode_FromString(nReparation.c_str())
+                                       , PyUnicode_FromString(fuelConsumption.c_str())
+                                       , PyUnicode_FromString(yearOfConstruction.c_str())
+                                       , PyUnicode_FromString(horsePower.c_str())
+                                       , PyUnicode_FromString(mileage.c_str()));
+        if(pFunc != NULL){
+            PyObject *pValue = PyObject_CallObject(pFunc, pArgs);
+            auto result = _PyUnicode_AsString(pValue);
+            if(result){
+//                self->state.setPossibilityToBeMaster(result);
+                self->send(buddy, set_master_probability_v, result);
+            }
+                
+        }
+    }
+    Py_Finalize();
+    
+    
+    
+}
+
+void calculateTruckProbability(const caf::actor& buddy){
+    caf::scoped_actor self{buddy.home_system()};
+    self->send(buddy, python_atom_v);
 }
