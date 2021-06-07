@@ -1,24 +1,76 @@
 <html>
     <header>
+        <style>
+            h1 {
+                text-align: center;
+                font-size: 60px;
+                }
+
+            div {
+                text-align: center;
+                font-size: 30px;
+                }
+            .styled-table {
+                text-align: center;
+                border-collapse: collapse;
+                margin: 25px 0;
+                font-size: 0.9em;
+                font-family: sans-serif;
+                min-width: 400px;
+                box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+                margin-left: auto;
+                margin-right: auto;
+                border: 1px solid #009879;
+            }
+            .styled-table thead tr {
+                text-align: center;
+                background-color: #009879;
+                color: #ffffff;
+            }
+            .styled-table th,
+            .styled-table td {
+                padding: 12px 15px;
+                text-align: center;
+                border: 1px #009879;
+            }
+            .styled-table tbody tr {
+                border-bottom: 1px solid #dddddd;
+            }
+
+            .styled-table tbody tr {
+                background-color: #f3f3f3;
+                
+            }
+
+            .styled-table tbody tr:last-of-type {
+                border-bottom: 2px solid #009879;
+            }
+            .styled-table tbody tr.active-row {
+                font-weight: bold;
+                color: #009879;
+                border: 1px #009879;
+            }
+            .center {
+            margin-left: auto;
+            margin-right: auto;
+            }
+        </style>
     </header>
-    <h1>Truck Platoon</h1>
+    
     <section>
     </section>
-    <body>
+    <body style="background-color:#bfff00;">
 
         <script src="myScript.js"></script>
-        
-        
-       
-        <label for="ip">IP:</label>
-        <input type="text" id="ip" name="ip" required minlength="4" maxlength="35" size="10">
-        <label for="port">PORT:</label>
-        <input type="text" id="port" name="port" required minlength="4" maxlength="35" size="10">
+        <h1>Truck Platoon</h1>
 
-        <button type="button"onclick="myFunction()">Add truck!</button>
+        <div>Ip address: <input type="text" id = 'ip'> Port: <input type="text" id = 'port'></div><!here just directly replace the white text with what names u want to appear on screen>
+        
+        <div id="truck">
+        <input type="image" src="truck_sparkles.gif"onclick="askForStatus()" />
+        </div>
 
-        <p id="demo">A Paragraph</p>
-        <input type="image" src="trucm.jpg"onclick="askForStatus()" />
+        <p id="demo"></p>
 
     </body>
 </html>
